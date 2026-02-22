@@ -64,7 +64,7 @@ export default function Profile() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
-            <p className="text-sm text-muted-foreground">Private — only you can see this</p>
+            <p className="text-sm text-muted-foreground capitalize">{role || "—"} · Private — only you can see this</p>
           </div>
         </div>
 
