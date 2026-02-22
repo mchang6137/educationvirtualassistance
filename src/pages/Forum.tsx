@@ -34,7 +34,7 @@ export default function Forum() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const { selectedClass, classes } = useClassContext();
+  const { selectedClass, classes, loading: classesLoading } = useClassContext();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -72,6 +72,10 @@ export default function Forum() {
     const matchCategory = !activeCategory || t.category === activeCategory;
     return matchSearch && matchCategory;
   });
+
+  if (classesLoading) {
+    return <AppLayout><div className="flex items-center justify-center py-16 text-muted-foreground">Loading classes...</div></AppLayout>;
+  }
 
   if (classes.length === 0) {
     return <AppLayout><ClassOnboarding /></AppLayout>;
