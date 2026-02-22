@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { checkAntiCheat, categorizeMessage } from "@/data/mockData";
+import { T } from "@/components/T";
 
 interface ChatMsg {
   id: string;
@@ -170,7 +171,7 @@ export default function Chat() {
   };
 
   if (loading) {
-    return <AppLayout><div className="flex items-center justify-center py-16 text-muted-foreground">Loading classes...</div></AppLayout>;
+    return <AppLayout><div className="flex items-center justify-center py-16 text-muted-foreground"><T>Loading classes...</T></div></AppLayout>;
   }
 
   if (classes.length === 0) {
@@ -184,14 +185,14 @@ export default function Chat() {
     <div className="flex flex-col h-full">
       {/* Header - only shown in overlay */}
       <div className="border-b border-border px-4 py-2 bg-card/50">
-        <h2 className="text-sm font-semibold text-foreground">Live Chat</h2>
+        <h2 className="text-sm font-semibold text-foreground"><T>Live Chat</T></h2>
         <p className="text-[10px] text-muted-foreground">{selectedClass?.name}</p>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         {messages.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8 text-sm">No messages yet.</p>
+          <p className="text-center text-muted-foreground py-8 text-sm"><T>No messages yet.</T></p>
         ) : (
           messages.map((m) => <ChatMessageBubble key={m.id} message={m} />)
         )}
@@ -235,9 +236,9 @@ export default function Chat() {
       <div className="flex flex-col h-[calc(100vh-3.5rem)]">
         <div className="border-b border-border px-6 py-3 bg-card/50 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">Live Chat — {selectedClass?.name || "Select a class"}</h1>
+            <h1 className="text-lg font-semibold text-foreground"><T>Live Chat</T> — {selectedClass?.name || <T>Select a class</T>}</h1>
             <p className="text-xs text-muted-foreground">
-              {isInstructor ? "You can reply and ⭐ star stellar responses" : "All messages are anonymous · updates live"}
+              <T>{isInstructor ? "You can reply and star stellar responses" : "All messages are anonymous · updates live"}</T>
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -258,9 +259,9 @@ export default function Chat() {
             <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search messages..." className="pl-10 rounded-xl h-8 text-sm" />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <button onClick={() => setActiveCategory(null)} className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>All</button>
+            <button onClick={() => setActiveCategory(null)} className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}><T>All</T></button>
             {categories.map((c) => (
-              <button key={c} onClick={() => setActiveCategory(activeCategory === c ? null : c)} className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${activeCategory === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>{c}</button>
+              <button key={c} onClick={() => setActiveCategory(activeCategory === c ? null : c)} className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${activeCategory === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}><T>{c}</T></button>
             ))}
           </div>
         </div>
@@ -272,8 +273,8 @@ export default function Chat() {
               const matchCategory = !activeCategory || m.category === activeCategory;
               return matchSearch && matchCategory;
             });
-            if (messages.length === 0) return <p className="text-center text-muted-foreground py-12">No messages yet. Be the first to ask a question!</p>;
-            if (filtered.length === 0) return <p className="text-center text-muted-foreground py-12">No messages match your filter.</p>;
+            if (messages.length === 0) return <p className="text-center text-muted-foreground py-12"><T>No messages yet. Be the first to ask a question!</T></p>;
+            if (filtered.length === 0) return <p className="text-center text-muted-foreground py-12"><T>No messages match your filter.</T></p>;
             return filtered.map((m) => <ChatMessageBubble key={m.id} message={m} />);
           })()}
           <div ref={bottomRef} />
@@ -285,7 +286,7 @@ export default function Chat() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">AI Question Refinement</span>
+                <span className="text-sm font-medium text-foreground"><T>AI Question Refinement</T></span>
               </div>
               <button onClick={() => { setAiOpen(false); setAiSuggestions([]); }} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
@@ -324,8 +325,8 @@ export default function Chat() {
               <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-3 text-sm text-foreground animate-fade-in">
                 <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-destructive">Academic Integrity Notice</p>
-                  <p className="text-muted-foreground mt-1">{warning}</p>
+                   <p className="font-medium text-destructive"><T>Academic Integrity Notice</T></p>
+                   <p className="text-muted-foreground mt-1">{warning}</p>
                 </div>
                 <button onClick={() => setWarning(null)} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
               </div>
@@ -353,7 +354,7 @@ export default function Chat() {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Press Enter to send · Click ✨ to refine your question with AI</p>
+            <p className="text-[10px] text-muted-foreground mt-1"><T>Press Enter to send · Click the sparkle to refine your question with AI</T></p>
           </div>
         ) : (
           <ChatUnavailable nextClass={nextClass} />

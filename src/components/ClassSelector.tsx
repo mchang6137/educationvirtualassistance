@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { T } from "@/components/T";
 
 export function ClassSelector() {
   const { classes, selectedClass, setSelectedClassId } = useClassContext();
@@ -40,12 +41,12 @@ export function ClassOnboarding() {
         <Plus className="h-8 w-8 text-primary" />
       </div>
       <h2 className="text-xl font-bold text-foreground mb-2">
-        {role === "instructor" ? "Create your first class" : "Join a class"}
+        <T>{role === "instructor" ? "Create your first class" : "Join a class"}</T>
       </h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-sm">
-        {role === "instructor"
+        <T>{role === "instructor"
           ? "Create a class to get started. Students will join using your class code."
-          : "Enter the class code provided by your instructor to join."}
+          : "Enter the class code provided by your instructor to join."}</T>
       </p>
       {role === "instructor" ? <CreateClassDialog /> : <JoinClassDialog />}
     </div>
@@ -77,18 +78,18 @@ function JoinClassDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="rounded-xl gap-2">
-          <LogIn className="h-4 w-4" /> Join Class
+          <LogIn className="h-4 w-4" /> <T>Join Class</T>
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Join a Class</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle><T>Join a Class</T></DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Class Code</Label>
+            <Label><T>Class Code</T></Label>
             <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. CS201-F26" className="rounded-xl mt-1" />
           </div>
           <Button onClick={handleJoin} disabled={loading} className="w-full rounded-xl">
-            {loading ? "Joining..." : "Join Class"}
+            <T>{loading ? "Joining..." : "Join Class"}</T>
           </Button>
         </div>
       </DialogContent>
@@ -123,22 +124,22 @@ function CreateClassDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="rounded-xl gap-2">
-          <Plus className="h-4 w-4" /> Create Class
+          <Plus className="h-4 w-4" /> <T>Create Class</T>
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Create a Class</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle><T>Create a Class</T></DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Class Name</Label>
+            <Label><T>Class Name</T></Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. CS 201 - Data Structures" className="rounded-xl mt-1" />
           </div>
           <div>
-            <Label>Class Code</Label>
+            <Label><T>Class Code</T></Label>
             <Input value={code} onChange={(e) => setCode(e.target.value)} placeholder="e.g. CS201-F26" className="rounded-xl mt-1" />
           </div>
           <Button onClick={handleCreate} disabled={loading} className="w-full rounded-xl">
-            {loading ? "Creating..." : "Create Class"}
+            <T>{loading ? "Creating..." : "Create Class"}</T>
           </Button>
         </div>
       </DialogContent>

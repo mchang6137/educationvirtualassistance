@@ -16,6 +16,8 @@ import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MessageCategory } from "@/data/mockData";
+import { T } from "@/components/T";
+import { SpeakButton } from "@/components/SpeakButton";
 
 const ALL_CATEGORIES: MessageCategory[] = ["Concept Clarification", "Example Request", "General Question", "Assignment Help", "Lecture Logistics", "Study Sessions"];
 
@@ -104,8 +106,8 @@ export default function Forum() {
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Discussion Forum</h1>
-            <p className="text-sm text-muted-foreground">All posts are anonymous</p>
+            <h1 className="text-2xl font-bold text-foreground"><T>Discussion Forum</T></h1>
+            <p className="text-sm text-muted-foreground"><T>All posts are anonymous</T></p>
           </div>
           <div className="flex items-center gap-2">
             <ClassSelector />
@@ -117,12 +119,12 @@ export default function Forum() {
         {!isInstructor && selectedClass && (
           <div className={`flex items-center gap-2 mb-4 px-4 py-3 rounded-xl border text-sm ${chatActive ? "bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400" : "bg-muted/50 border-border text-muted-foreground"}`}>
             <Clock className="h-4 w-4 shrink-0" />
-            {chatActive ? (
-              <span>Live Chat is <span className="font-semibold">active now</span> — head to the chat to participate!</span>
+             {chatActive ? (
+              <span><T>Live Chat is active now — head to the chat to participate!</T></span>
             ) : (
               <span>
-                Live Chat is only available during scheduled class times.
-                {nextClass && <> Next session: <span className="font-medium text-foreground">{nextClass}</span></>}
+                <T>Live Chat is only available during scheduled class times.</T>
+                {nextClass && <> <T>Next session</T>: <span className="font-medium text-foreground">{nextClass}</span></>}
               </span>
             )}
           </div>
@@ -134,9 +136,9 @@ export default function Forum() {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-6">
-          <button onClick={() => setActiveCategory(null)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>All</button>
+          <button onClick={() => setActiveCategory(null)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}><T>All</T></button>
           {visibleCategories.map((c) => (
-            <button key={c} onClick={() => setActiveCategory(activeCategory === c ? null : c)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${activeCategory === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>{c}</button>
+            <button key={c} onClick={() => setActiveCategory(activeCategory === c ? null : c)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${activeCategory === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}><T>{c}</T></button>
           ))}
         </div>
 
@@ -147,8 +149,11 @@ export default function Forum() {
               <div className="bg-card border border-border rounded-xl p-5 hover:shadow-md hover:shadow-primary/5 transition-all hover:-translate-y-0.5 group">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{t.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{t.body}</p>
+                    <div className="flex items-start gap-1">
+                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors flex-1"><T>{t.title}</T></h3>
+                      <SpeakButton text={`${t.title}. ${t.body}`} className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2"><T>{t.body}</T></p>
                     <div className="flex items-center gap-2 mt-3 flex-wrap">
                       <CategoryBadge category={t.category as any} />
                       {(t.tags || []).map((tag) => (
@@ -163,12 +168,12 @@ export default function Forum() {
                 </div>
                 <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                   <span>{new Date(t.created_at).toLocaleDateString()}</span>
-                  <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{t.reply_count || 0} replies</span>
+                  <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{t.reply_count || 0} <T>replies</T></span>
                 </div>
               </div>
             </Link>
           ))}
-          {!loading && filtered.length === 0 && <p className="text-center text-muted-foreground py-12">No threads found. Start a discussion!</p>}
+          {!loading && filtered.length === 0 && <p className="text-center text-muted-foreground py-12"><T>No threads found. Start a discussion!</T></p>}
         </div>
       </div>
     </AppLayout>
@@ -254,14 +259,14 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-xl gap-2"><Plus className="h-4 w-4" /> New Thread</Button>
+        <Button className="rounded-xl gap-2"><Plus className="h-4 w-4" /> <T>New Thread</T></Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>New Discussion Thread</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle><T>New Discussion Thread</T></DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between">
-              <Label>Title</Label>
+              <Label><T>Title</T></Label>
               <Button
                 type="button"
                 variant="ghost"
@@ -270,14 +275,14 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
                 className="h-6 gap-1 text-xs text-primary hover:text-primary"
                 title="Refine title with AI"
               >
-                <Sparkles className="h-3 w-3" /> Refine
+                <Sparkles className="h-3 w-3" /> <T>Refine</T>
               </Button>
             </div>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What's your question?" className="rounded-xl mt-1" />
           </div>
           <div>
             <div className="flex items-center justify-between">
-              <Label>Body</Label>
+              <Label><T>Body</T></Label>
               <Button
                 type="button"
                 variant="ghost"
@@ -286,7 +291,7 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
                 className="h-6 gap-1 text-xs text-primary hover:text-primary"
                 title="Refine body with AI"
               >
-                <Sparkles className="h-3 w-3" /> Refine
+                <Sparkles className="h-3 w-3" /> <T>Refine</T>
               </Button>
             </div>
             <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Describe your question in detail..." className="rounded-xl mt-1" rows={4} />
@@ -331,19 +336,19 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
           )}
 
           <div>
-            <Label>Category</Label>
+            <Label><T>Category</T></Label>
             <div className="flex flex-wrap gap-2 mt-1">
               {categories.map((c) => (
-                <button key={c} onClick={() => setCategory(c)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${category === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"}`}>{c}</button>
+                <button key={c} onClick={() => setCategory(c)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${category === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border"}`}><T>{c}</T></button>
               ))}
             </div>
           </div>
           <div>
-            <Label>Tags (comma-separated)</Label>
+            <Label><T>Tags (comma-separated)</T></Label>
             <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="algorithms, recursion" className="rounded-xl mt-1" />
           </div>
           <Button onClick={handleCreate} disabled={loading} className="w-full rounded-xl">
-            {loading ? "Creating..." : "Post Thread"}
+            <T>{loading ? "Creating..." : "Post Thread"}</T>
           </Button>
         </div>
       </DialogContent>
