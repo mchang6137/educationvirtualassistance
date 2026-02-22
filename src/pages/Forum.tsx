@@ -44,11 +44,18 @@ export default function Forum() {
   const fetchThreads = async () => {
     if (!selectedClass) return;
     setLoading(true);
-    const { data } = await supabase
+    let query = supabase
       .from("forum_threads")
       .select("id, title, body, category, tags, created_at, upvotes")
       .eq("class_id", selectedClass.id)
       .order("created_at", { ascending: false });
+
+    // Exclude Study Sessions at the query level for instructors
+    if (isInstructor) {
+      query = query.neq("category", "Study Sessions");
+    }
+
+    const { data } = await query;
 
     if (data) {
       // Fetch reply counts
@@ -68,7 +75,7 @@ export default function Forum() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchThreads(); }, [selectedClass?.id]);
+  useEffect(() => { fetchThreads(); }, [selectedClass?.id, role]);
 
   // Realtime: new threads
   useEffect(() => {
