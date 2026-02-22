@@ -6,6 +6,7 @@ import { TrendingUp } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
 import { useClassContext } from "@/hooks/useClassContext";
 import { supabase } from "@/integrations/supabase/client";
+import { T } from "@/components/T";
 
 const CATEGORY_COLORS: Record<string, string> = {
   "Concept Clarification": "hsl(260, 60%, 65%)",
@@ -76,23 +77,23 @@ export default function Instructor() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Instructor Dashboard</h1>
-            <p className="text-sm text-muted-foreground">{selectedClass?.name || "Select a class"} — Real-time classroom analytics</p>
+            <h1 className="text-2xl font-bold text-foreground"><T>Instructor Dashboard</T></h1>
+            <p className="text-sm text-muted-foreground">{selectedClass?.name || "Select a class"} — <T>Real-time classroom analytics</T></p>
           </div>
           <ClassSelector />
         </div>
 
         {loading ? (
-          <p className="text-center text-muted-foreground py-12">Loading analytics...</p>
+          <p className="text-center text-muted-foreground py-12"><T>Loading analytics...</T></p>
         ) : total === 0 ? (
-          <p className="text-center text-muted-foreground py-12">No data yet. Analytics will appear once students start asking questions.</p>
+          <p className="text-center text-muted-foreground py-12"><T>No data yet. Analytics will appear once students start asking questions.</T></p>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  Question Volume Over Time
+                  <T>Question Volume Over Time</T>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -110,7 +111,7 @@ export default function Instructor() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Category Breakdown</CardTitle>
+                <CardTitle className="text-lg"><T>Category Breakdown</T></CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -127,7 +128,7 @@ export default function Instructor() {
                 <div className="mt-4 space-y-2">
                   {categoryData.map((c) => (
                     <div key={c.category} className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">{c.category}</span>
+                      <span className="text-muted-foreground"><T>{c.category}</T></span>
                       <span className="font-medium text-foreground">{total > 0 ? Math.round((c.count / total) * 100) : 0}%</span>
                     </div>
                   ))}
