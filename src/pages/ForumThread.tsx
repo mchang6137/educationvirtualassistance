@@ -81,7 +81,7 @@ function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvot
 
 export default function ForumThread() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
   const [thread, setThread] = useState<ThreadData | null>(null);
   const [replies, setReplies] = useState<ReplyRow[]>([]);
@@ -249,6 +249,18 @@ export default function ForumThread() {
       <AppLayout>
         <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
           <p className="text-lg">Thread not found</p>
+          <Button asChild variant="outline" className="mt-4"><Link to="/forum">Back to Forum</Link></Button>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Block instructors from viewing Study Sessions threads
+  if (role === "instructor" && thread.category === "Study Sessions") {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
+          <p className="text-lg">This thread is student-only</p>
           <Button asChild variant="outline" className="mt-4"><Link to="/forum">Back to Forum</Link></Button>
         </div>
       </AppLayout>

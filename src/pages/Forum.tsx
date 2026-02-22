@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MessageCategory } from "@/data/mockData";
 
+const ALL_CATEGORIES: MessageCategory[] = ["Concept Clarification", "Example Request", "General Question", "Assignment Help", "Lecture Logistics", "Study Sessions"];
+
 interface ThreadRow {
   id: string;
   title: string;
@@ -27,16 +29,16 @@ interface ThreadRow {
   reply_count?: number;
 }
 
-const categories: MessageCategory[] = ["Concept Clarification", "Example Request", "General Question", "Assignment Help", "Lecture Logistics"];
-
 export default function Forum() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [threads, setThreads] = useState<ThreadRow[]>([]);
   const [loading, setLoading] = useState(true);
   const { selectedClass, classes, loading: classesLoading } = useClassContext();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { toast } = useToast();
+  const isInstructor = role === "instructor";
+  const visibleCategories = isInstructor ? ALL_CATEGORIES.filter(c => c !== "Study Sessions") : ALL_CATEGORIES;
 
   const fetchThreads = async () => {
     if (!selectedClass) return;
@@ -85,7 +87,8 @@ export default function Forum() {
   const filtered = threads.filter((t) => {
     const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.body.toLowerCase().includes(search.toLowerCase());
     const matchCategory = !activeCategory || t.category === activeCategory;
-    return matchSearch && matchCategory;
+    const hideStudySessions = isInstructor && t.category === "Study Sessions";
+    return matchSearch && matchCategory && !hideStudySessions;
   });
 
   if (classesLoading) {
@@ -106,7 +109,7 @@ export default function Forum() {
           </div>
           <div className="flex items-center gap-2">
             <ClassSelector />
-            <NewThreadDialog classId={selectedClass?.id} userId={user?.id} onCreated={fetchThreads} />
+            <NewThreadDialog classId={selectedClass?.id} userId={user?.id} onCreated={fetchThreads} categories={visibleCategories} />
           </div>
         </div>
 
@@ -117,7 +120,7 @@ export default function Forum() {
 
         <div className="flex flex-wrap gap-2 mb-6">
           <button onClick={() => setActiveCategory(null)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>All</button>
-          {categories.map((c) => (
+          {visibleCategories.map((c) => (
             <button key={c} onClick={() => setActiveCategory(activeCategory === c ? null : c)} className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${activeCategory === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>{c}</button>
           ))}
         </div>
@@ -157,7 +160,7 @@ export default function Forum() {
   );
 }
 
-function NewThreadDialog({ classId, userId, onCreated }: { classId?: string; userId?: string; onCreated: () => void }) {
+function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?: string; userId?: string; onCreated: () => void; categories: MessageCategory[] }) {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");

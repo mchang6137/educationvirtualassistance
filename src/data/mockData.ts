@@ -4,7 +4,8 @@ export type MessageCategory =
   | "Example Request"
   | "General Question"
   | "Assignment Help"
-  | "Lecture Logistics";
+  | "Lecture Logistics"
+  | "Study Sessions";
 
 export interface ChatMessage {
   id: string;
