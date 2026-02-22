@@ -91,6 +91,8 @@ export default function Chat() {
           });
         } else if (payload.eventType === "UPDATE") {
           setMessages((prev) => prev.map(m => m.id === (payload.new as ChatMsg).id ? payload.new as ChatMsg : m));
+        } else if (payload.eventType === "DELETE") {
+          setMessages((prev) => prev.filter(m => m.id !== (payload.old as any).id));
         }
       })
       .subscribe();
