@@ -5,11 +5,15 @@ import { ClassScheduleManager } from "@/components/chat/ClassScheduleManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Bookmark, GraduationCap, Clock } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BookOpen, Bookmark, GraduationCap, Clock, Settings, Sun, Moon, Globe, Volume2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
+import { useLanguage, LANGUAGES } from "@/hooks/useLanguage";
+import { SpeakButton } from "@/components/SpeakButton";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -20,6 +24,8 @@ interface SavedThreadRow { id: string; thread_id: string; title?: string; catego
 export default function Profile() {
   const { setSelectedClassId } = useClassContext();
   const { user, role } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const { language, setLanguage } = useLanguage();
   const [joinedClasses, setJoinedClasses] = useState<ClassRow[]>([]);
   const [createdClasses, setCreatedClasses] = useState<ClassRow[]>([]);
   const [savedThreads, setSavedThreads] = useState<SavedThreadRow[]>([]);
@@ -83,8 +89,11 @@ export default function Profile() {
           <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center">
             <GraduationCap className="h-7 w-7 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
+              <SpeakButton text={`${displayName}. ${role || ""}`} />
+            </div>
             <p className="text-sm text-muted-foreground capitalize">{role || "—"} · Private — only you can see this</p>
           </div>
         </div>
@@ -93,6 +102,7 @@ export default function Profile() {
           <TabsList className="bg-muted rounded-xl p-1">
             <TabsTrigger value="classes" className="rounded-lg gap-2"><BookOpen className="h-4 w-4" /> Classes</TabsTrigger>
             <TabsTrigger value="saved" className="rounded-lg gap-2"><Bookmark className="h-4 w-4" /> Saved Threads</TabsTrigger>
+            <TabsTrigger value="customization" className="rounded-lg gap-2"><Settings className="h-4 w-4" /> Customization</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-6">
@@ -174,7 +184,10 @@ export default function Profile() {
                   <div className="space-y-3">
                     {savedThreads.map((t) => (
                       <Link key={t.id} to={`/forum/${t.thread_id}`} className="block p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <p className="font-medium text-foreground hover:text-primary">{t.title}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-foreground hover:text-primary flex-1">{t.title}</p>
+                          <SpeakButton text={t.title || ""} />
+                        </div>
                         <div className="flex items-center gap-2 mt-2">
                           {t.category && <CategoryBadge category={t.category as any} />}
                           <span className="text-xs text-muted-foreground">{t.upvotes || 0} upvotes</span>
@@ -183,6 +196,64 @@ export default function Profile() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="customization" className="space-y-6">
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2">{theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />} Appearance</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Choose your preferred theme for the platform.</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setTheme("light")}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${theme === "light" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}
+                  >
+                    <Sun className="h-6 w-6" />
+                    <span className="text-sm font-medium">Light</span>
+                  </button>
+                  <button
+                    onClick={() => setTheme("dark")}
+                    className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${theme === "dark" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}
+                  >
+                    <Moon className="h-6 w-6" />
+                    <span className="text-sm font-medium">Dark</span>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Language</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">Select your preferred language. The entire platform will refresh and translate to your chosen language.</p>
+                <Select value={language} onValueChange={(val) => setLanguage(val as any)}>
+                  <SelectTrigger className="w-full max-w-xs">
+                    <SelectValue placeholder="Select language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {LANGUAGES.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Volume2 className="h-5 w-5" /> Accessibility</CardTitle></CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-2">
+                  For visually impaired users, look for the <Volume2 className="inline h-4 w-4 mx-1" /> speak button next to text throughout the platform.
+                  Clicking it will read the text aloud using your browser's built-in speech synthesis.
+                </p>
+                <div className="flex items-center gap-3 mt-4 p-3 rounded-xl bg-muted/30">
+                  <span className="text-sm text-foreground">Try it out:</span>
+                  <SpeakButton text="Welcome to EVA! This is the text-to-speech accessibility feature. You can find the speak button next to text throughout the platform." size="default" />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

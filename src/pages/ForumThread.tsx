@@ -9,7 +9,7 @@ import { ArrowUp, ArrowLeft, CheckCircle2, Send, Reply, Bell, BellOff } from "lu
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-
+import { SpeakButton } from "@/components/SpeakButton";
 import { cn } from "@/lib/utils";
 
 interface ReplyRow {
@@ -55,7 +55,10 @@ function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvot
             <span className="text-xs font-medium text-muted-foreground">{reply.upvotes}</span>
           </div>
           <div className="flex-1">
-            <p className="text-sm text-foreground leading-relaxed">{reply.text}</p>
+            <div className="flex items-start gap-1">
+              <p className="text-sm text-foreground leading-relaxed flex-1">{reply.text}</p>
+              <SpeakButton text={reply.text} className="h-5 w-5 shrink-0" />
+            </div>
             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
               <span>{new Date(reply.created_at).toLocaleString()}</span>
               {reply.is_instructor_validated && (
@@ -298,7 +301,10 @@ export default function ForumThread() {
               <span className="text-sm font-bold text-muted-foreground">{thread.upvotes}</span>
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-foreground mb-2">{thread.title}</h1>
+              <div className="flex items-start gap-1">
+                <h1 className="text-xl font-bold text-foreground mb-2 flex-1">{thread.title}</h1>
+                <SpeakButton text={`${thread.title}. ${thread.body}`} />
+              </div>
               <p className="text-sm text-foreground/80 leading-relaxed mb-4">{thread.body}</p>
               <div className="flex items-center gap-2 flex-wrap">
                 <CategoryBadge category={thread.category as any} />
