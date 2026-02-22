@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ClassSelector, ClassOnboarding } from "@/components/ClassSelector";
 import { ChatMessageBubble } from "@/components/chat/ChatMessageBubble";
+import { ChatUnavailable } from "@/components/chat/ChatUnavailable";
+import { SlideUploadButton, StudentSlideViewer } from "@/components/chat/SlideViewer";
+import { ClassScheduleManager } from "@/components/chat/ClassScheduleManager";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -10,6 +13,7 @@ import type { MessageCategory } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { checkAntiCheat, categorizeMessage } from "@/data/mockData";
 
@@ -43,6 +47,9 @@ export default function Chat() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { selectedClass, classes, loading } = useClassContext();
   const { user, role } = useAuth();
+  const { available: chatAvailable, nextClass, schedules, refetchSchedules } = useChatAvailability(selectedClass?.id);
+
+  const isInstructor = role === "instructor";
 
   // Fetch messages for selected class
   useEffect(() => {
@@ -160,6 +167,9 @@ export default function Chat() {
     return <AppLayout><ClassOnboarding /></AppLayout>;
   }
 
+  // Instructors always have access; students depend on schedule
+  const canSendMessages = isInstructor || chatAvailable;
+
   return (
     <AppLayout>
       <div className="flex flex-col h-[calc(100vh-3.5rem)]">
@@ -167,11 +177,22 @@ export default function Chat() {
           <div>
             <h1 className="text-lg font-semibold text-foreground">Live Chat — {selectedClass?.name || "Select a class"}</h1>
             <p className="text-xs text-muted-foreground">
-              {role === "instructor" ? "You can reply and ⭐ star stellar responses" : "All messages are anonymous · updates live"}
+              {isInstructor ? "You can reply and ⭐ star stellar responses" : "All messages are anonymous · updates live"}
             </p>
           </div>
-          <ClassSelector />
+          <div className="flex items-center gap-2">
+            {isInstructor && selectedClass && (
+              <>
+                <ClassScheduleManager classId={selectedClass.id} schedules={schedules} onUpdate={refetchSchedules} />
+                <SlideUploadButton classId={selectedClass.id} />
+              </>
+            )}
+            <ClassSelector />
+          </div>
         </div>
+
+        {/* Student slide viewer */}
+        {!isInstructor && selectedClass && <StudentSlideViewer classId={selectedClass.id} />}
 
         {/* Search & Category Filter */}
         <div className="border-b border-border px-6 py-3 bg-muted/20 space-y-2">
@@ -202,7 +223,7 @@ export default function Chat() {
         </div>
 
         {/* AI Suggestions Panel */}
-        {aiOpen && (
+        {aiOpen && canSendMessages && (
           <div className="border-t border-border bg-muted/30 px-4 py-3 animate-fade-in">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -239,42 +260,47 @@ export default function Chat() {
           </div>
         )}
 
-        <div className="border-t border-border p-4 bg-card/50">
-          {warning && (
-            <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-3 text-sm text-foreground animate-fade-in">
-              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-destructive">Academic Integrity Notice</p>
-                <p className="text-muted-foreground mt-1">{warning}</p>
+        {/* Chat input or unavailable banner */}
+        {canSendMessages ? (
+          <div className="border-t border-border p-4 bg-card/50">
+            {warning && (
+              <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-xl p-3 mb-3 text-sm text-foreground animate-fade-in">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-destructive">Academic Integrity Notice</p>
+                  <p className="text-muted-foreground mt-1">{warning}</p>
+                </div>
+                <button onClick={() => setWarning(null)} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
               </div>
-              <button onClick={() => setWarning(null)} className="ml-auto text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
-            </div>
-          )}
+            )}
 
-          <div className="flex gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={role === "instructor" ? "Reply to students..." : "Type your question or thoughts..."}
-              className="min-h-[44px] max-h-32 resize-none rounded-xl"
-              rows={1}
-            />
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={handleAiRefine}
-              className="shrink-0 rounded-xl"
-              title="Refine with AI — get multiple phrasing options"
-            >
-              <Sparkles className="h-4 w-4" />
-            </Button>
-            <Button size="icon" onClick={() => handleSend()} className="shrink-0 rounded-xl">
-              <Send className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              <Textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={isInstructor ? "Reply to students..." : "Type your question or thoughts..."}
+                className="min-h-[44px] max-h-32 resize-none rounded-xl"
+                rows={1}
+              />
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleAiRefine}
+                className="shrink-0 rounded-xl"
+                title="Refine with AI — get multiple phrasing options"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+              <Button size="icon" onClick={() => handleSend()} className="shrink-0 rounded-xl">
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Press Enter to send · Click ✨ to refine your question with AI</p>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">Press Enter to send · Click ✨ to refine your question with AI</p>
-        </div>
+        ) : (
+          <ChatUnavailable nextClass={nextClass} />
+        )}
       </div>
     </AppLayout>
   );
