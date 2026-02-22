@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -21,7 +21,9 @@ const Index = () => {
             </div>
             {user ? (
               <Button asChild variant="default" className="rounded-xl">
-                <Link to="/chat">Go to Dashboard</Link>
+                <Link to={role === "instructor" ? "/instructor" : "/profile"}>
+                  {role === "instructor" ? "Instructor Dashboard" : "Student Dashboard"}
+                </Link>
               </Button>
             ) : (
               <Button asChild variant="default" className="rounded-xl">
