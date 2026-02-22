@@ -2,16 +2,15 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Brain, Users, BarChart3, ArrowRight, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
+import { T } from "@/components/T";
 
 export function HeroSection() {
   const { user, role } = useAuth();
 
   const dashboardLink = role === "instructor" ? "/instructor" : "/profile";
-  const dashboardLabel = role === "instructor" ? "Instructor Dashboard" : "Student Dashboard";
 
   return (
     <section className="relative overflow-hidden py-20 md:py-32">
-      {/* Background decoration */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-10 right-10 w-96 h-96 bg-eva-purple/10 rounded-full blur-3xl" />
@@ -21,31 +20,30 @@ export function HeroSection() {
       <div className="container mx-auto px-6 text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-6">
           <Shield className="h-4 w-4" />
-          100% Anonymous • AI-Assisted
+          <T>100% Anonymous • AI-Assisted</T>
         </div>
 
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-6">
-          Ask freely.
+          <T>Ask freely.</T>
           <br />
-          <span className="text-primary">Learn boldly.</span>
+          <span className="text-primary"><T>Learn boldly.</T></span>
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-          EVA is your anonymous AI-powered classroom companion. Ask questions without judgment,
-          get help phrasing your thoughts, and engage in meaningful academic discussions.
+          <T>EVA is your anonymous AI-powered classroom companion. Ask questions without judgment, get help phrasing your thoughts, and engage in meaningful academic discussions.</T>
         </p>
 
         <div className="flex justify-center">
           {user ? (
             <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl">
               <Link to={dashboardLink}>
-                {dashboardLabel} <ArrowRight className="ml-2 h-5 w-5" />
+                <T>{role === "instructor" ? "Instructor Dashboard" : "Student Dashboard"}</T> <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           ) : (
             <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl">
               <Link to="/auth">
-                Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                <T>Get Started</T> <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           )}
@@ -87,10 +85,10 @@ export function FeatureCards() {
     <section className="py-20 bg-muted/40">
       <div className="container mx-auto px-6">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-foreground mb-4">
-          Everything you need to learn better
+          <T>Everything you need to learn better</T>
         </h2>
         <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
-          Built for students who want to participate more and professors who want to understand their class better.
+          <T>Built for students who want to participate more and professors who want to understand their class better.</T>
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -102,8 +100,8 @@ export function FeatureCards() {
               <div className={`inline-flex p-3 rounded-xl ${f.color} mb-4`}>
                 <f.icon className="h-6 w-6" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">{f.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2"><T>{f.title}</T></h3>
+              <p className="text-sm text-muted-foreground leading-relaxed"><T>{f.description}</T></p>
             </div>
           ))}
         </div>

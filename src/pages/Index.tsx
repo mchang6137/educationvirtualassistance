@@ -2,6 +2,7 @@ import { HeroSection, FeatureCards } from "@/components/landing/HeroSection";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { T } from "@/components/T";
 
 const Index = () => {
   const { user, role } = useAuth();
@@ -16,18 +17,18 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-              <Link to="/chat" className="hover:text-foreground transition-colors">Live Chat</Link>
-              <Link to="/forum" className="hover:text-foreground transition-colors">Forum</Link>
+              <Link to="/chat" className="hover:text-foreground transition-colors"><T>Live Chat</T></Link>
+              <Link to="/forum" className="hover:text-foreground transition-colors"><T>Forum</T></Link>
             </div>
             {user ? (
               <Button asChild variant="default" className="rounded-xl">
                 <Link to={role === "instructor" ? "/instructor" : "/profile"}>
-                  {role === "instructor" ? "Instructor Dashboard" : "Student Dashboard"}
+                  <T>{role === "instructor" ? "Instructor Dashboard" : "Student Dashboard"}</T>
                 </Link>
               </Button>
             ) : (
               <Button asChild variant="default" className="rounded-xl">
-                <Link to="/auth">Sign In</Link>
+                <Link to="/auth"><T>Sign In</T></Link>
               </Button>
             )}
           </div>
@@ -39,8 +40,8 @@ const Index = () => {
 
       <footer className="py-12 border-t border-border">
         <div className="container mx-auto px-6 text-center text-sm text-muted-foreground">
-          <p>EVA — Anonymous AI-Assisted Classroom Discussions</p>
-          <p className="mt-1">Built for students, by students. Ask freely, learn boldly.</p>
+          <p><T>EVA — Anonymous AI-Assisted Classroom Discussions</T></p>
+          <p className="mt-1"><T>Built for students, by students. Ask freely, learn boldly.</T></p>
         </div>
       </footer>
     </div>
