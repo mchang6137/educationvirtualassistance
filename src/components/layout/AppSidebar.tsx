@@ -1,4 +1,5 @@
 import { Home, MessageSquare, BookOpen, BarChart3, User, LogOut } from "lucide-react";
+import { T } from "@/components/T";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -55,7 +56,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} end={item.url === "/"} activeClassName="bg-sidebar-accent text-primary font-medium">
                       <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
+                      <span><T>{item.title}</T></span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -69,7 +70,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleSignOut} className="text-muted-foreground hover:text-destructive">
               <LogOut className="h-4 w-4" />
-              <span>Sign Out</span>
+              <span><T>Sign Out</T></span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 
 export const LANGUAGES = [
   { code: "en", label: "English" },
@@ -20,7 +20,6 @@ export type LangCode = (typeof LANGUAGES)[number]["code"];
 interface LanguageContextType {
   language: LangCode;
   setLanguage: (lang: LangCode) => void;
-  t: (text: string) => string;
   translateText: (text: string) => Promise<string>;
 }
 
@@ -35,24 +34,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLanguage = useCallback((lang: LangCode) => {
     localStorage.setItem("eva-lang", lang);
-    setLanguageState(lang);
-    // Clear cache on language change
     cache.clear();
-    // Reload to apply everywhere
-    window.location.reload();
+    setLanguageState(lang);
   }, []);
 
-  // Synchronous lookup (returns cached or original)
-  const t = useCallback(
-    (text: string) => {
-      if (language === "en") return text;
-      const key = `${language}:${text}`;
-      return cache.get(key) || text;
-    },
-    [language],
-  );
-
-  // Async translation using free Google Translate API
   const translateText = useCallback(
     async (text: string): Promise<string> => {
       if (language === "en" || !text.trim()) return text;
@@ -60,7 +45,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       if (cache.has(key)) return cache.get(key)!;
       try {
         const res = await fetch(
-          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${language}&dt=t&q=${encodeURIComponent(text)}`,
+          `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${language}&dt=t&q=${encodeURIComponent(text)}`,
         );
         const json = await res.json();
         const translated = json[0]?.map((s: any) => s[0]).join("") || text;
@@ -74,7 +59,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, translateText }}>
+    <LanguageContext.Provider value={{ language, setLanguage, translateText }}>
       {children}
     </LanguageContext.Provider>
   );
