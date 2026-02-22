@@ -67,6 +67,21 @@ export default function Forum() {
 
   useEffect(() => { fetchThreads(); }, [selectedClass?.id]);
 
+  // Realtime: new threads
+  useEffect(() => {
+    if (!selectedClass) return;
+    const channel = supabase
+      .channel(`forum-${selectedClass.id}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "forum_threads",
+        filter: `class_id=eq.${selectedClass.id}`,
+      }, () => { fetchThreads(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selectedClass?.id]);
+
   const filtered = threads.filter((t) => {
     const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.body.toLowerCase().includes(search.toLowerCase());
     const matchCategory = !activeCategory || t.category === activeCategory;
