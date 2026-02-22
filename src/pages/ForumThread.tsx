@@ -5,11 +5,11 @@ import { CategoryBadge } from "@/components/chat/CategoryBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, ArrowLeft, CheckCircle2, Send, Reply, Bell, BellOff, Clock } from "lucide-react";
+import { ArrowUp, ArrowLeft, CheckCircle2, Send, Reply, Bell, BellOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useChatAvailability } from "@/hooks/useChatAvailability";
+
 import { cn } from "@/lib/utils";
 
 interface ReplyRow {
@@ -95,7 +95,7 @@ export default function ForumThread() {
   const [replyUpvotedIds, setReplyUpvotedIds] = useState<Set<string>>(new Set());
   const [subscribed, setSubscribed] = useState(false);
   const [subLoading, setSubLoading] = useState(false);
-  const { available: classActive, nextClass } = useChatAvailability(thread?.class_id);
+  
 
   const fetchThread = async () => {
     if (!id) return;
@@ -319,22 +319,7 @@ export default function ForumThread() {
           {replies.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">No replies yet. Be the first to respond!</p>}
         </div>
 
-        {!classActive ? (
-          <div className="mt-8 bg-muted/30 border border-border rounded-xl p-6">
-            <div className="flex flex-col items-center text-center gap-3 py-2">
-              <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Clock className="h-5 w-5 text-primary" />
-              </div>
-              <p className="text-sm font-medium text-foreground">Replies are only available during an active class session</p>
-              {nextClass && (
-                <p className="text-xs text-muted-foreground">
-                  Next class: <span className="font-medium text-foreground">{nextClass}</span>
-                </p>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-8 bg-card border border-border rounded-xl p-4">
+        <div className="mt-8 bg-card border border-border rounded-xl p-4">
             {replyingToReply && (
               <div className="flex items-center gap-2 mb-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                 <Reply className="h-3 w-3" />
@@ -352,7 +337,6 @@ export default function ForumThread() {
               </Button>
             </div>
           </div>
-        )}
       </div>
     </AppLayout>
   );
