@@ -112,17 +112,14 @@ export default {
   		},
   		fontFamily: {
   			sans: [
-  				'Space Grotesk',
+  				'Figtree',
   				'ui-sans-serif',
   				'system-ui',
-  				'-apple-system',
-  				'BlinkMacSystemFont',
-  				'Segoe UI',
-  				'Roboto',
-  				'Helvetica Neue',
-  				'Arial',
-  				'Noto Sans',
-  				'sans-serif'
+  				'sans-serif',
+  				'Apple Color Emoji',
+  				'Segoe UI Emoji',
+  				'Segoe UI Symbol',
+  				'Noto Color Emoji'
   			],
   			serif: [
   				'Lora',
@@ -134,7 +131,7 @@ export default {
   				'serif'
   			],
   			mono: [
-  				'Space Mono',
+  				'Cascadia Code',
   				'ui-monospace',
   				'SFMono-Regular',
   				'Menlo',
