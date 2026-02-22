@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, DragEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Presentation, Upload, ChevronLeft, ChevronRight, Trash2, FileText, Image, File } from "lucide-react";
+import { Presentation, Upload, ChevronLeft, ChevronRight, Trash2, FileText, Image, File, X, Maximize2, Minimize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -26,12 +26,24 @@ function FileIcon({ name }: { name: string }) {
   return <File className="h-6 w-6 text-muted-foreground" />;
 }
 
-export function SlideUploadButton({ classId }: { classId: string }) {
+function SlidePreview({ slide, className = "" }: { slide: SlideFile; className?: string }) {
+  if (isImage(slide.file_name)) {
+    return <img src={slide.file_url} alt={slide.file_name} className={`max-h-full max-w-full object-contain ${className}`} />;
+  }
+  return (
+    <iframe
+      src={`https://docs.google.com/gview?url=${encodeURIComponent(slide.file_url)}&embedded=true`}
+      className={`w-full h-full ${className}`}
+      title={slide.file_name}
+    />
+  );
+}
+
+// ─── Upload / Manage Dialog ───────────────────────────────────────
+export function SlideUploadButton({ classId, onStartPresenting }: { classId: string; onStartPresenting?: () => void }) {
   const [slides, setSlides] = useState<SlideFile[]>([]);
   const [open, setOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [presenting, setPresenting] = useState(false);
-  const [currentIdx, setCurrentIdx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
@@ -51,7 +63,6 @@ export function SlideUploadButton({ classId }: { classId: string }) {
   const uploadFiles = async (files: FileList | File[]) => {
     if (!user) return;
     setUploading(true);
-
     for (const file of Array.from(files)) {
       const path = `${classId}/${Date.now()}-${file.name}`;
       const { error: uploadErr } = await supabase.storage.from("slides").upload(path, file);
@@ -67,108 +78,25 @@ export function SlideUploadButton({ classId }: { classId: string }) {
         uploaded_by: user.id,
       });
     }
-
     await fetchSlides();
     setUploading(false);
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) uploadFiles(e.target.files);
-  };
+  const handleDrop = (e: DragEvent) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files); };
+  const handleDelete = async (slide: SlideFile) => { await supabase.from("class_slides").delete().eq("id", slide.id); await fetchSlides(); };
 
-  const handleDrop = (e: DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    if (e.dataTransfer.files.length > 0) uploadFiles(e.dataTransfer.files);
-  };
-
-  const handleDragOver = (e: DragEvent) => { e.preventDefault(); setDragging(true); };
-  const handleDragLeave = (e: DragEvent) => { e.preventDefault(); setDragging(false); };
-
-  const handleDelete = async (slide: SlideFile) => {
-    await supabase.from("class_slides").delete().eq("id", slide.id);
-    await fetchSlides();
-  };
-
-  const startPresenting = async () => {
+  const handleStartPresenting = async () => {
     if (slides.length === 0) return;
-    setPresenting(true);
-    setCurrentIdx(0);
-    const { data: existing } = await supabase
-      .from("slide_sessions")
-      .select("id")
-      .eq("class_id", classId)
-      .maybeSingle();
-
+    const { data: existing } = await supabase.from("slide_sessions").select("id").eq("class_id", classId).maybeSingle();
+    const payload = { current_slide_url: slides[0].file_url, is_active: true, started_at: new Date().toISOString(), updated_at: new Date().toISOString() };
     if (existing) {
-      await supabase.from("slide_sessions").update({
-        current_slide_url: slides[0].file_url,
-        is_active: true,
-        started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq("class_id", classId);
+      await supabase.from("slide_sessions").update(payload).eq("class_id", classId);
     } else {
-      await supabase.from("slide_sessions").insert({
-        class_id: classId,
-        current_slide_url: slides[0].file_url,
-        is_active: true,
-        started_at: new Date().toISOString(),
-      });
+      await supabase.from("slide_sessions").insert({ class_id: classId, ...payload });
     }
-  };
-
-  const stopPresenting = async () => {
-    setPresenting(false);
-    await supabase.from("slide_sessions").update({
-      is_active: false,
-      current_slide_url: null,
-      updated_at: new Date().toISOString(),
-    }).eq("class_id", classId);
-  };
-
-  const goToSlide = async (idx: number) => {
-    if (idx < 0 || idx >= slides.length) return;
-    setCurrentIdx(idx);
-    await supabase.from("slide_sessions").update({
-      current_slide_url: slides[idx].file_url,
-      updated_at: new Date().toISOString(),
-    }).eq("class_id", classId);
-  };
-
-  const renderPreview = (slide: SlideFile) => {
-    if (isImage(slide.file_name)) {
-      return <img src={slide.file_url} alt={slide.file_name} className="max-h-full max-w-full object-contain" />;
-    }
-    if (slide.file_name.toLowerCase().endsWith(".pdf")) {
-      return (
-        <iframe
-          src={`https://docs.google.com/gview?url=${encodeURIComponent(slide.file_url)}&embedded=true`}
-          className="w-full h-full"
-          title={slide.file_name}
-        />
-      );
-    }
-    // For DOCX and other non-previewable files, use Google Docs viewer
-    return (
-      <iframe
-        src={`https://docs.google.com/gview?url=${encodeURIComponent(slide.file_url)}&embedded=true`}
-        className="w-full h-full"
-        title={slide.file_name}
-      />
-    );
-  };
-
-  const renderThumbnail = (slide: SlideFile) => {
-    if (isImage(slide.file_name)) {
-      return <img src={slide.file_url} alt={slide.file_name} className="w-full aspect-video object-cover" />;
-    }
-    return (
-      <div className="w-full aspect-video flex flex-col items-center justify-center bg-muted/50 gap-1 p-2">
-        <FileIcon name={slide.file_name} />
-        <span className="text-[10px] text-muted-foreground text-center truncate w-full">{slide.file_name}</span>
-      </div>
-    );
+    setOpen(false);
+    onStartPresenting?.();
   };
 
   return (
@@ -183,69 +111,38 @@ export function SlideUploadButton({ classId }: { classId: string }) {
           <DialogTitle>Manage Slides & Documents</DialogTitle>
         </DialogHeader>
 
-        <input
-          ref={fileRef}
-          type="file"
-          accept="*/*"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-        />
+        <input ref={fileRef} type="file" accept="*/*" multiple className="hidden" onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); }} />
 
-        {/* Drag & drop zone */}
         <div
           onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${
-            dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-          }`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setDragging(false); }}
+          className={`border-2 border-dashed rounded-xl p-6 text-center transition-colors cursor-pointer ${dragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"}`}
           onClick={() => fileRef.current?.click()}
         >
           <Upload className={`h-8 w-8 mx-auto mb-2 ${dragging ? "text-primary" : "text-muted-foreground"}`} />
-          <p className="text-sm font-medium text-foreground">
-            {uploading ? "Uploading..." : "Drag & drop files here"}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            PDF, DOCX, PNG, JPG, and more — or click to browse
-          </p>
+          <p className="text-sm font-medium text-foreground">{uploading ? "Uploading..." : "Drag & drop files here"}</p>
+          <p className="text-xs text-muted-foreground mt-1">PDF, DOCX, PNG, JPG, and more — or click to browse</p>
         </div>
 
-        <div className="flex gap-2">
-          {slides.length > 0 && !presenting && (
-            <Button className="rounded-xl gap-2" onClick={startPresenting}>
-              <Presentation className="h-4 w-4" /> Start Presenting
-            </Button>
-          )}
-          {presenting && (
-            <Button variant="destructive" className="rounded-xl" onClick={stopPresenting}>
-              Stop Presenting
-            </Button>
-          )}
-        </div>
-
-        {presenting && slides.length > 0 && (
-          <div className="space-y-3">
-            <div className="relative bg-muted rounded-xl overflow-hidden aspect-video flex items-center justify-center">
-              {renderPreview(slides[currentIdx])}
-            </div>
-            <div className="flex items-center justify-center gap-4">
-              <Button variant="outline" size="icon" className="rounded-xl" onClick={() => goToSlide(currentIdx - 1)} disabled={currentIdx === 0}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="text-sm text-muted-foreground">{currentIdx + 1} / {slides.length}</span>
-              <Button variant="outline" size="icon" className="rounded-xl" onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx === slides.length - 1}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+        {slides.length > 0 && (
+          <Button className="rounded-xl gap-2" onClick={handleStartPresenting}>
+            <Presentation className="h-4 w-4" /> Start Presenting
+          </Button>
         )}
 
-        {!presenting && slides.length > 0 && (
+        {slides.length > 0 && (
           <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
             {slides.map((s, i) => (
               <div key={s.id} className="relative group rounded-xl border border-border overflow-hidden">
-                {renderThumbnail(s)}
+                {isImage(s.file_name) ? (
+                  <img src={s.file_url} alt={s.file_name} className="w-full aspect-video object-cover" />
+                ) : (
+                  <div className="w-full aspect-video flex flex-col items-center justify-center bg-muted/50 gap-1 p-2">
+                    <FileIcon name={s.file_name} />
+                    <span className="text-[10px] text-muted-foreground text-center truncate w-full">{s.file_name}</span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDelete(s)}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -267,9 +164,125 @@ export function SlideUploadButton({ classId }: { classId: string }) {
   );
 }
 
+// ─── Instructor Presenter Overlay (slides + chat side by side) ────
+export function InstructorPresenterOverlay({ classId, chatElement, onClose }: {
+  classId: string;
+  chatElement: React.ReactNode;
+  onClose: () => void;
+}) {
+  const [slides, setSlides] = useState<SlideFile[]>([]);
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase.from("class_slides").select("*").eq("class_id", classId).order("created_at");
+      setSlides((data as SlideFile[]) || []);
+    };
+    fetch();
+  }, [classId]);
+
+  const goToSlide = async (idx: number) => {
+    if (idx < 0 || idx >= slides.length) return;
+    setCurrentIdx(idx);
+    await supabase.from("slide_sessions").update({
+      current_slide_url: slides[idx].file_url,
+      updated_at: new Date().toISOString(),
+    }).eq("class_id", classId);
+  };
+
+  const stopPresenting = async () => {
+    await supabase.from("slide_sessions").update({
+      is_active: false,
+      current_slide_url: null,
+      updated_at: new Date().toISOString(),
+    }).eq("class_id", classId);
+    onClose();
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); goToSlide(currentIdx + 1); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); goToSlide(currentIdx - 1); }
+      if (e.key === "Escape") stopPresenting();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [currentIdx, slides.length]);
+
+  if (slides.length === 0) return null;
+
+  return (
+    <div className={`fixed inset-0 z-50 bg-background flex ${expanded ? "" : ""}`}>
+      {/* Slides panel */}
+      <div className={`flex flex-col ${expanded ? "w-full" : "w-2/3"} border-r border-border`}>
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card/80">
+          <div className="flex items-center gap-2">
+            <Presentation className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Presenting</span>
+            <span className="text-xs text-muted-foreground">— {slides[currentIdx]?.file_name}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpanded(!expanded)} title={expanded ? "Show chat" : "Expand slides"}>
+              {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+            </Button>
+            <Button variant="destructive" size="sm" className="rounded-lg h-7 text-xs" onClick={stopPresenting}>
+              Stop
+            </Button>
+          </div>
+        </div>
+
+        {/* Slide content */}
+        <div className="flex-1 flex items-center justify-center bg-muted/30 overflow-hidden relative">
+          <SlidePreview slide={slides[currentIdx]} />
+        </div>
+
+        {/* Navigation + thumbnails */}
+        <div className="border-t border-border bg-card/80 px-4 py-2">
+          <div className="flex items-center justify-center gap-4 mb-2">
+            <Button variant="outline" size="icon" className="rounded-xl h-8 w-8" onClick={() => goToSlide(currentIdx - 1)} disabled={currentIdx === 0}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground font-medium">{currentIdx + 1} / {slides.length}</span>
+            <Button variant="outline" size="icon" className="rounded-xl h-8 w-8" onClick={() => goToSlide(currentIdx + 1)} disabled={currentIdx === slides.length - 1}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => goToSlide(i)}
+                className={`shrink-0 w-16 aspect-video rounded-lg border-2 overflow-hidden transition-all ${i === currentIdx ? "border-primary ring-1 ring-primary/30" : "border-border hover:border-primary/40 opacity-60 hover:opacity-100"}`}
+              >
+                {isImage(s.file_name) ? (
+                  <img src={s.file_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted/50">
+                    <FileIcon name={s.file_name} />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Chat panel */}
+      {!expanded && (
+        <div className="w-1/3 flex flex-col min-w-0">
+          {chatElement}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Student Live Slide Viewer ────────────────────────────────────
 export function StudentSlideViewer({ classId }: { classId: string }) {
   const [session, setSession] = useState<SlideSession | null>(null);
-  const [fileName, setFileName] = useState<string>("");
 
   useEffect(() => {
     const fetch = async () => {
@@ -302,29 +315,6 @@ export function StudentSlideViewer({ classId }: { classId: string }) {
 
   const url = session.current_slide_url;
   const isImg = IMAGE_EXTS.some(ext => url.toLowerCase().endsWith(ext));
-  const isPdf = url.toLowerCase().endsWith(".pdf");
-
-  const renderContent = () => {
-    if (isImg) {
-      return <img src={url} alt="Current slide" className="max-h-full max-w-full object-contain" />;
-    }
-    if (isPdf) {
-      return (
-        <iframe
-          src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
-          className="w-full h-full"
-          title="Slide"
-        />
-      );
-    }
-    return (
-      <iframe
-        src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
-        className="w-full h-full"
-        title="Slide"
-      />
-    );
-  };
 
   return (
     <div className="border-b border-border bg-muted/30 px-4 py-3">
@@ -334,7 +324,15 @@ export function StudentSlideViewer({ classId }: { classId: string }) {
         <span className="text-[10px] bg-primary/15 text-primary rounded-full px-2 py-0.5 animate-pulse">LIVE</span>
       </div>
       <div className="rounded-xl overflow-hidden bg-background border border-border aspect-video max-h-72 flex items-center justify-center">
-        {renderContent()}
+        {isImg ? (
+          <img src={url} alt="Current slide" className="max-h-full max-w-full object-contain" />
+        ) : (
+          <iframe
+            src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+            className="w-full h-full"
+            title="Slide"
+          />
+        )}
       </div>
     </div>
   );

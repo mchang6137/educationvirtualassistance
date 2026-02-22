@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { ClassSelector, ClassOnboarding } from "@/components/ClassSelector";
 import { ChatMessageBubble } from "@/components/chat/ChatMessageBubble";
 import { ChatUnavailable } from "@/components/chat/ChatUnavailable";
-import { SlideUploadButton, StudentSlideViewer } from "@/components/chat/SlideViewer";
+import { SlideUploadButton, StudentSlideViewer, InstructorPresenterOverlay } from "@/components/chat/SlideViewer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ export default function Chat() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
+  const [presenting, setPresenting] = useState(false);
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { selectedClass, classes, loading } = useClassContext();
@@ -49,6 +50,16 @@ export default function Chat() {
   const { available: chatAvailable, nextClass, schedules, refetchSchedules } = useChatAvailability(selectedClass?.id);
 
   const isInstructor = role === "instructor";
+
+  // Check if already presenting on mount
+  useEffect(() => {
+    if (!selectedClass || !isInstructor) return;
+    const check = async () => {
+      const { data } = await supabase.from("slide_sessions").select("is_active").eq("class_id", selectedClass.id).maybeSingle();
+      if (data?.is_active) setPresenting(true);
+    };
+    check();
+  }, [selectedClass?.id, isInstructor]);
 
   // Fetch messages for selected class
   useEffect(() => {
@@ -166,8 +177,58 @@ export default function Chat() {
     return <AppLayout><ClassOnboarding /></AppLayout>;
   }
 
-  // Instructors always have access; students depend on schedule
   const canSendMessages = isInstructor || chatAvailable;
+
+  // Reusable chat content (used both inline and in the presenter overlay)
+  const chatContent = (
+    <div className="flex flex-col h-full">
+      {/* Header - only shown in overlay */}
+      <div className="border-b border-border px-4 py-2 bg-card/50">
+        <h2 className="text-sm font-semibold text-foreground">Live Chat</h2>
+        <p className="text-[10px] text-muted-foreground">{selectedClass?.name}</p>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+        {messages.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8 text-sm">No messages yet.</p>
+        ) : (
+          messages.map((m) => <ChatMessageBubble key={m.id} message={m} />)
+        )}
+        <div ref={presenting ? undefined : bottomRef} />
+      </div>
+
+      {/* Input */}
+      {canSendMessages && (
+        <div className="border-t border-border p-3 bg-card/50">
+          <div className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isInstructor ? "Reply to students..." : "Type your question..."}
+              className="min-h-[40px] max-h-24 resize-none rounded-xl text-sm"
+              rows={1}
+            />
+            <Button size="icon" onClick={() => handleSend()} className="shrink-0 rounded-xl h-10 w-10">
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Show presenter overlay
+  if (presenting && isInstructor && selectedClass) {
+    return (
+      <InstructorPresenterOverlay
+        classId={selectedClass.id}
+        chatElement={chatContent}
+        onClose={() => setPresenting(false)}
+      />
+    );
+  }
 
   return (
     <AppLayout>
@@ -181,9 +242,7 @@ export default function Chat() {
           </div>
           <div className="flex items-center gap-2">
             {isInstructor && selectedClass && (
-              <>
-                <SlideUploadButton classId={selectedClass.id} />
-              </>
+              <SlideUploadButton classId={selectedClass.id} onStartPresenting={() => setPresenting(true)} />
             )}
             <ClassSelector />
           </div>
