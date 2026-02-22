@@ -42,7 +42,7 @@ export default function Chat() {
   const [warning, setWarning] = useState<string | null>(null);
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { selectedClass, classes } = useClassContext();
+  const { selectedClass, classes, loading } = useClassContext();
   const { user } = useAuth();
 
   // Fetch messages for selected class
@@ -111,6 +111,10 @@ export default function Chat() {
       handleSend();
     }
   };
+
+  if (loading) {
+    return <AppLayout><div className="flex items-center justify-center py-16 text-muted-foreground">Loading classes...</div></AppLayout>;
+  }
 
   if (classes.length === 0) {
     return <AppLayout><ClassOnboarding /></AppLayout>;
