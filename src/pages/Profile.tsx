@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CategoryBadge } from "@/components/chat/CategoryBadge";
+import { ClassScheduleManager } from "@/components/chat/ClassScheduleManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-interface ScheduleRow { class_id: string; day_of_week: number; start_time: string; end_time: string; }
+interface ScheduleRow { id: string; class_id: string; day_of_week: number; start_time: string; end_time: string; timezone: string; }
 interface ClassRow { id: string; name: string; code: string; }
 interface SavedThreadRow { id: string; thread_id: string; title?: string; category?: string; upvotes?: number; }
 
@@ -58,10 +59,13 @@ export default function Profile() {
         setSavedThreads(mapped);
       });
 
-    // Fetch all schedules for user's classes
-    supabase.from("class_schedules").select("class_id, day_of_week, start_time, end_time")
-      .then(({ data }) => setSchedules(data || []));
+    fetchSchedules();
   }, [user, role]);
+
+  const fetchSchedules = () => {
+    supabase.from("class_schedules").select("id, class_id, day_of_week, start_time, end_time, timezone")
+      .then(({ data }) => setSchedules(data || []));
+  };
 
   const formatTime = (t: string) => {
     const [h, m] = t.split(":").map(Number);
@@ -103,20 +107,23 @@ export default function Profile() {
                       {createdClasses.map((c) => {
                         const scheds = getClassSchedules(c.id);
                         return (
-                          <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="block p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                            <div className="flex items-center justify-between">
-                              <p className="font-medium text-foreground">{c.name}</p>
-                              <Badge variant="outline">Join Code: {c.code}</Badge>
-                            </div>
-                            {scheds.length > 0 && (
-                              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {scheds.map((s, i) => (
-                                  <span key={i}>{DAY_NAMES[s.day_of_week]} {formatTime(s.start_time)} – {formatTime(s.end_time)}{i < scheds.length - 1 ? ", " : ""}</span>
-                                ))}
+                          <div key={c.id} className="p-4 rounded-xl bg-muted/30 space-y-3">
+                            <Link to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="block hover:opacity-80 transition-opacity">
+                              <div className="flex items-center justify-between">
+                                <p className="font-medium text-foreground">{c.name}</p>
+                                <Badge variant="outline">Join Code: {c.code}</Badge>
                               </div>
-                            )}
-                          </Link>
+                              {scheds.length > 0 && (
+                                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                                  <Clock className="h-3 w-3" />
+                                  {scheds.map((s, i) => (
+                                    <span key={i}>{DAY_NAMES[s.day_of_week]} {formatTime(s.start_time)} – {formatTime(s.end_time)}{i < scheds.length - 1 ? ", " : ""}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </Link>
+                            <ClassScheduleManager classId={c.id} schedules={scheds} onUpdate={fetchSchedules} />
+                          </div>
                         );
                       })}
                     </div>

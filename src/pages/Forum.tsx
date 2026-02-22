@@ -8,10 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, ArrowUp, MessageSquare, Plus, Sparkles, Loader2, X } from "lucide-react";
+import { Search, ArrowUp, MessageSquare, Plus, Sparkles, Loader2, X, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
+import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import type { MessageCategory } from "@/data/mockData";
@@ -38,6 +39,7 @@ export default function Forum() {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const isInstructor = role === "instructor";
+  const { available: chatActive, nextClass } = useChatAvailability(selectedClass?.id);
   const visibleCategories = isInstructor ? ALL_CATEGORIES.filter(c => c !== "Study Sessions") : ALL_CATEGORIES;
 
   const fetchThreads = async () => {
@@ -110,6 +112,21 @@ export default function Forum() {
             <NewThreadDialog classId={selectedClass?.id} userId={user?.id} onCreated={fetchThreads} categories={visibleCategories} />
           </div>
         </div>
+
+        {/* Live Chat schedule info for students */}
+        {!isInstructor && selectedClass && (
+          <div className={`flex items-center gap-2 mb-4 px-4 py-3 rounded-xl border text-sm ${chatActive ? "bg-green-500/10 border-green-500/20 text-green-700 dark:text-green-400" : "bg-muted/50 border-border text-muted-foreground"}`}>
+            <Clock className="h-4 w-4 shrink-0" />
+            {chatActive ? (
+              <span>Live Chat is <span className="font-semibold">active now</span> — head to the chat to participate!</span>
+            ) : (
+              <span>
+                Live Chat is only available during scheduled class times.
+                {nextClass && <> Next session: <span className="font-medium text-foreground">{nextClass}</span></>}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
