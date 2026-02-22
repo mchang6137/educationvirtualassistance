@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CategoryBadge } from "@/components/chat/CategoryBadge";
 import { ClassScheduleManager } from "@/components/chat/ClassScheduleManager";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { BookOpen, Bookmark, GraduationCap, Clock, Settings, Sun, Moon, Globe, Volume2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,9 @@ import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useLanguage, LANGUAGES } from "@/hooks/useLanguage";
+import { useSpeechSettings } from "@/hooks/useSpeech";
 import { SpeakButton } from "@/components/SpeakButton";
+import { T } from "@/components/T";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -26,6 +29,7 @@ export default function Profile() {
   const { user, role } = useAuth();
   const { theme, setTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
+  const { speed, setSpeed } = useSpeechSettings();
   const [joinedClasses, setJoinedClasses] = useState<ClassRow[]>([]);
   const [createdClasses, setCreatedClasses] = useState<ClassRow[]>([]);
   const [savedThreads, setSavedThreads] = useState<SavedThreadRow[]>([]);
@@ -34,37 +38,25 @@ export default function Profile() {
 
   useEffect(() => {
     if (!user) return;
-
-    // Fetch profile
     supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setDisplayName(data?.display_name || "Anonymous"));
-
-    // Fetch joined classes (via class_members)
     supabase.from("class_members").select("class_id, classes(id, name, code)").eq("user_id", user.id)
       .then(({ data }) => {
         const mapped = (data || []).map((d: any) => d.classes).filter(Boolean);
         setJoinedClasses(mapped);
       });
-
-    // Fetch created classes (for instructors)
     if (role === "instructor") {
       supabase.from("classes").select("id, name, code").eq("instructor_id", user.id)
         .then(({ data }) => setCreatedClasses(data || []));
     }
-
-    // Fetch saved threads
     supabase.from("saved_threads").select("id, thread_id, forum_threads(id, title, category, upvotes)").eq("user_id", user.id)
       .then(({ data }) => {
         const mapped = (data || []).map((d: any) => ({
-          id: d.id,
-          thread_id: d.thread_id,
-          title: d.forum_threads?.title,
-          category: d.forum_threads?.category,
-          upvotes: d.forum_threads?.upvotes,
+          id: d.id, thread_id: d.thread_id, title: d.forum_threads?.title,
+          category: d.forum_threads?.category, upvotes: d.forum_threads?.upvotes,
         }));
         setSavedThreads(mapped);
       });
-
     fetchSchedules();
   }, [user, role]);
 
@@ -82,6 +74,8 @@ export default function Profile() {
   const getClassSchedules = (classId: string) =>
     schedules.filter((s) => s.class_id === classId);
 
+  const speedLabel = speed <= 0.5 ? "Very Slow" : speed <= 0.8 ? "Slow" : speed <= 1.2 ? "Normal" : speed <= 1.6 ? "Fast" : "Very Fast";
+
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto px-6 py-8">
@@ -94,24 +88,24 @@ export default function Profile() {
               <h1 className="text-2xl font-bold text-foreground">{displayName}</h1>
               <SpeakButton text={`${displayName}. ${role || ""}`} />
             </div>
-            <p className="text-sm text-muted-foreground capitalize">{role || "—"} · Private — only you can see this</p>
+            <p className="text-sm text-muted-foreground capitalize">{role || "—"} · <T>Private — only you can see this</T></p>
           </div>
         </div>
 
         <Tabs defaultValue="classes" className="space-y-6">
           <TabsList className="bg-muted rounded-xl p-1">
-            <TabsTrigger value="classes" className="rounded-lg gap-2"><BookOpen className="h-4 w-4" /> Classes</TabsTrigger>
-            <TabsTrigger value="saved" className="rounded-lg gap-2"><Bookmark className="h-4 w-4" /> Saved Threads</TabsTrigger>
-            <TabsTrigger value="customization" className="rounded-lg gap-2"><Settings className="h-4 w-4" /> Customization</TabsTrigger>
+            <TabsTrigger value="classes" className="rounded-lg gap-2"><BookOpen className="h-4 w-4" /> <T>Classes</T></TabsTrigger>
+            <TabsTrigger value="saved" className="rounded-lg gap-2"><Bookmark className="h-4 w-4" /> <T>Saved Threads</T></TabsTrigger>
+            <TabsTrigger value="customization" className="rounded-lg gap-2"><Settings className="h-4 w-4" /> <T>Customization</T></TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-6">
             {role === "instructor" ? (
               <Card>
-                <CardHeader><CardTitle>Classes Created</CardTitle></CardHeader>
+                <CardHeader><CardTitle><T>Classes Created</T></CardTitle></CardHeader>
                 <CardContent>
                   {createdClasses.length === 0 ? (
-                    <p className="text-muted-foreground text-sm text-center py-6">You haven't created any classes yet.</p>
+                    <p className="text-muted-foreground text-sm text-center py-6"><T>You haven't created any classes yet.</T></p>
                   ) : (
                     <div className="space-y-3">
                       {createdClasses.map((c) => {
@@ -121,7 +115,7 @@ export default function Profile() {
                             <Link to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="block hover:opacity-80 transition-opacity">
                               <div className="flex items-center justify-between">
                                 <p className="font-medium text-foreground">{c.name}</p>
-                                <Badge variant="outline">Join Code: {c.code}</Badge>
+                                <Badge variant="outline"><T>Join Code</T>: {c.code}</Badge>
                               </div>
                               {scheds.length > 0 && (
                                 <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
@@ -142,10 +136,10 @@ export default function Profile() {
               </Card>
             ) : (
               <Card>
-                <CardHeader><CardTitle>Classes Joined</CardTitle></CardHeader>
+                <CardHeader><CardTitle><T>Classes Joined</T></CardTitle></CardHeader>
                 <CardContent>
                   {joinedClasses.length === 0 ? (
-                    <p className="text-muted-foreground text-sm text-center py-6">You haven't joined any classes yet.</p>
+                    <p className="text-muted-foreground text-sm text-center py-6"><T>You haven't joined any classes yet.</T></p>
                   ) : (
                     <div className="space-y-3">
                       {joinedClasses.map((c) => {
@@ -176,10 +170,10 @@ export default function Profile() {
 
           <TabsContent value="saved">
             <Card>
-              <CardHeader><CardTitle>Saved Threads</CardTitle></CardHeader>
+              <CardHeader><CardTitle><T>Saved Threads</T></CardTitle></CardHeader>
               <CardContent>
                 {savedThreads.length === 0 ? (
-                  <p className="text-muted-foreground text-sm text-center py-6">No saved threads yet.</p>
+                  <p className="text-muted-foreground text-sm text-center py-6"><T>No saved threads yet.</T></p>
                 ) : (
                   <div className="space-y-3">
                     {savedThreads.map((t) => (
@@ -190,7 +184,7 @@ export default function Profile() {
                         </div>
                         <div className="flex items-center gap-2 mt-2">
                           {t.category && <CategoryBadge category={t.category as any} />}
-                          <span className="text-xs text-muted-foreground">{t.upvotes || 0} upvotes</span>
+                          <span className="text-xs text-muted-foreground">{t.upvotes || 0} <T>upvotes</T></span>
                         </div>
                       </Link>
                     ))}
@@ -201,33 +195,35 @@ export default function Profile() {
           </TabsContent>
 
           <TabsContent value="customization" className="space-y-6">
+            {/* Theme */}
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2">{theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />} Appearance</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2">{theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />} <T>Appearance</T></CardTitle></CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Choose your preferred theme for the platform.</p>
+                <p className="text-sm text-muted-foreground mb-4"><T>Choose your preferred theme for the platform.</T></p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setTheme("light")}
                     className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${theme === "light" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}
                   >
                     <Sun className="h-6 w-6" />
-                    <span className="text-sm font-medium">Light</span>
+                    <span className="text-sm font-medium"><T>Light</T></span>
                   </button>
                   <button
                     onClick={() => setTheme("dark")}
                     className={`flex-1 p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${theme === "dark" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}
                   >
                     <Moon className="h-6 w-6" />
-                    <span className="text-sm font-medium">Dark</span>
+                    <span className="text-sm font-medium"><T>Dark</T></span>
                   </button>
                 </div>
               </CardContent>
             </Card>
 
+            {/* Language */}
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Language</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> <T>Language</T></CardTitle></CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">Select your preferred language. The entire platform will refresh and translate to your chosen language.</p>
+                <p className="text-sm text-muted-foreground mb-4"><T>Select your preferred language. The entire platform will translate to your chosen language.</T></p>
                 <Select value={language} onValueChange={(val) => setLanguage(val as any)}>
                   <SelectTrigger className="w-full max-w-xs">
                     <SelectValue placeholder="Select language" />
@@ -243,16 +239,37 @@ export default function Profile() {
               </CardContent>
             </Card>
 
+            {/* Accessibility – TTS + Speed */}
             <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Volume2 className="h-5 w-5" /> Accessibility</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2">
-                  For visually impaired users, look for the <Volume2 className="inline h-4 w-4 mx-1" /> speak button next to text throughout the platform.
-                  Clicking it will read the text aloud using your browser's built-in speech synthesis.
-                </p>
-                <div className="flex items-center gap-3 mt-4 p-3 rounded-xl bg-muted/30">
-                  <span className="text-sm text-foreground">Try it out:</span>
-                  <SpeakButton text="Welcome to EVA! This is the text-to-speech accessibility feature. You can find the speak button next to text throughout the platform." size="default" />
+              <CardHeader><CardTitle className="flex items-center gap-2"><Volume2 className="h-5 w-5" /> <T>Accessibility</T></CardTitle></CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    <T>For visually impaired users, look for the speak button next to text throughout the platform. Clicking it will read the text aloud in your selected language.</T>
+                  </p>
+                  <div className="flex items-center gap-3 mt-4 p-3 rounded-xl bg-muted/30">
+                    <span className="text-sm text-foreground"><T>Try it out</T>:</span>
+                    <SpeakButton text="Welcome to EVA! This is the text-to-speech accessibility feature. You can find the speak button next to text throughout the platform." size="default" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground block mb-3">
+                    <T>Speech Speed</T>: <span className="text-muted-foreground font-normal">{speed.toFixed(1)}x — {speedLabel}</span>
+                  </label>
+                  <Slider
+                    value={[speed]}
+                    onValueChange={([v]) => setSpeed(v)}
+                    min={0.3}
+                    max={2}
+                    step={0.1}
+                    className="max-w-xs"
+                  />
+                  <div className="flex justify-between max-w-xs text-[10px] text-muted-foreground mt-1">
+                    <span><T>Slow</T></span>
+                    <span><T>Normal</T></span>
+                    <span><T>Fast</T></span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { SpeakButton } from "@/components/SpeakButton";
+import { T } from "@/components/T";
 
 interface ChatMsg {
   id: string;
@@ -149,7 +150,7 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
         message.is_ai ? "bg-eva-orange-light border border-primary/20" : "bg-card border border-border",
         starred && "ring-2 ring-yellow-400/60"
       )}>
-        <p className="text-sm text-foreground leading-relaxed">{message.text}</p>
+        <p className="text-sm text-foreground leading-relaxed"><T>{message.text}</T></p>
         {starred && (
           <Star className="absolute -top-2 -right-2 h-4 w-4 fill-yellow-400 text-yellow-400" />
         )}

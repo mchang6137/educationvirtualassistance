@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ClassProvider } from "@/hooks/useClassContext";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { LanguageProvider } from "@/hooks/useLanguage";
+import { SpeechProvider } from "@/hooks/useSpeech";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Chat from "./pages/Chat";
@@ -24,6 +25,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <LanguageProvider>
+        <SpeechProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -45,6 +47,7 @@ const App = () => (
             </AuthProvider>
           </BrowserRouter>
         </TooltipProvider>
+        </SpeechProvider>
       </LanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>

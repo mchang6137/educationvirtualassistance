@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { SpeakButton } from "@/components/SpeakButton";
 import { cn } from "@/lib/utils";
+import { T } from "@/components/T";
 
 interface ReplyRow {
   id: string;
@@ -56,7 +57,7 @@ function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvot
           </div>
           <div className="flex-1">
             <div className="flex items-start gap-1">
-              <p className="text-sm text-foreground leading-relaxed flex-1">{reply.text}</p>
+              <p className="text-sm text-foreground leading-relaxed flex-1"><T>{reply.text}</T></p>
               <SpeakButton text={reply.text} className="h-5 w-5 shrink-0" />
             </div>
             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
@@ -278,7 +279,7 @@ export default function ForumThread() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <Link to="/forum" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" /> Back to Forum
+            <ArrowLeft className="h-4 w-4" /> <T>Back to Forum</T>
           </Link>
           <Button
             variant={subscribed ? "default" : "outline"}
@@ -302,10 +303,10 @@ export default function ForumThread() {
             </div>
             <div className="flex-1">
               <div className="flex items-start gap-1">
-                <h1 className="text-xl font-bold text-foreground mb-2 flex-1">{thread.title}</h1>
+                <h1 className="text-xl font-bold text-foreground mb-2 flex-1"><T>{thread.title}</T></h1>
                 <SpeakButton text={`${thread.title}. ${thread.body}`} />
               </div>
-              <p className="text-sm text-foreground/80 leading-relaxed mb-4">{thread.body}</p>
+              <p className="text-sm text-foreground/80 leading-relaxed mb-4"><T>{thread.body}</T></p>
               <div className="flex items-center gap-2 flex-wrap">
                 <CategoryBadge category={thread.category as any} />
                 {(thread.tags || []).map((tag) => (
