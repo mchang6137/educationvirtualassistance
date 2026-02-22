@@ -181,8 +181,15 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
     if (!title.trim() || !body.trim() || !classId || !userId) return;
     setLoading(true);
     const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
+
+    // Auto-detect study session content and force category
+    const combined = (title + " " + body).toLowerCase();
+    const studyKeywords = ["study session", "study group", "study together", "meet up to study", "study meetup", "come study", "study at", "library to study"];
+    const isStudySession = studyKeywords.some((kw) => combined.includes(kw));
+    const finalCategory = isStudySession ? "Study Sessions" : category;
+
     const { error } = await supabase.from("forum_threads").insert({
-      title, body, category, tags,
+      title, body, category: finalCategory, tags,
       class_id: classId,
       user_id: userId,
     });
