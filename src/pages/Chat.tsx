@@ -4,7 +4,9 @@ import { ClassSelector, ClassOnboarding } from "@/components/ClassSelector";
 import { ChatMessageBubble } from "@/components/chat/ChatMessageBubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, AlertTriangle, X, Sparkles, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Send, AlertTriangle, X, Sparkles, Loader2, Search } from "lucide-react";
+import type { MessageCategory } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,9 +28,13 @@ interface AISuggestion {
   text: string;
 }
 
+const categories: MessageCategory[] = ["Concept Clarification", "Example Request", "General Question", "Assignment Help", "Lecture Logistics"];
+
 export default function Chat() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -167,13 +173,31 @@ export default function Chat() {
           <ClassSelector />
         </div>
 
+        {/* Search & Category Filter */}
+        <div className="border-b border-border px-6 py-3 bg-muted/20 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search messages..." className="pl-10 rounded-xl h-8 text-sm" />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button onClick={() => setActiveCategory(null)} className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${!activeCategory ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>All</button>
+            {categories.map((c) => (
+              <button key={c} onClick={() => setActiveCategory(activeCategory === c ? null : c)} className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${activeCategory === c ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:bg-muted"}`}>{c}</button>
+            ))}
+          </div>
+        </div>
+
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {messages.length === 0 && (
-            <p className="text-center text-muted-foreground py-12">No messages yet. Be the first to ask a question!</p>
-          )}
-          {messages.map((m) => (
-            <ChatMessageBubble key={m.id} message={m} />
-          ))}
+          {(() => {
+            const filtered = messages.filter((m) => {
+              const matchSearch = !search || m.text.toLowerCase().includes(search.toLowerCase());
+              const matchCategory = !activeCategory || m.category === activeCategory;
+              return matchSearch && matchCategory;
+            });
+            if (messages.length === 0) return <p className="text-center text-muted-foreground py-12">No messages yet. Be the first to ask a question!</p>;
+            if (filtered.length === 0) return <p className="text-center text-muted-foreground py-12">No messages match your filter.</p>;
+            return filtered.map((m) => <ChatMessageBubble key={m.id} message={m} />);
+          })()}
           <div ref={bottomRef} />
         </div>
 
