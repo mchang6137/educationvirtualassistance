@@ -46,11 +46,10 @@ export default function Forum() {
     setLoading(true);
     let query = supabase
       .from("forum_threads")
-      .select("id, title, body, category, tags, created_at, upvotes")
+      .select("id, title, body, category, tags, created_at, upvotes, forum_replies(count)")
       .eq("class_id", selectedClass.id)
       .order("created_at", { ascending: false });
 
-    // Exclude Study Sessions at the query level for instructors
     if (isInstructor) {
       query = query.neq("category", "Study Sessions");
     }
@@ -58,19 +57,11 @@ export default function Forum() {
     const { data } = await query;
 
     if (data) {
-      // Fetch reply counts
-      const threadIds = data.map((t) => t.id);
-      const { data: replyCounts } = await supabase
-        .from("forum_replies")
-        .select("thread_id")
-        .in("thread_id", threadIds.length > 0 ? threadIds : ["none"]);
-
-      const countMap: Record<string, number> = {};
-      (replyCounts || []).forEach((r: any) => {
-        countMap[r.thread_id] = (countMap[r.thread_id] || 0) + 1;
-      });
-
-      setThreads(data.map((t) => ({ ...t, reply_count: countMap[t.id] || 0 })));
+      setThreads(data.map((t: any) => ({
+        ...t,
+        reply_count: t.forum_replies?.[0]?.count || 0,
+        forum_replies: undefined,
+      })));
     }
     setLoading(false);
   };
