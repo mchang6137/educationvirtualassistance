@@ -5,7 +5,7 @@ import { CategoryBadge } from "@/components/chat/CategoryBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, ArrowLeft, CheckCircle2, Send, Reply, Bell, BellOff } from "lucide-react";
+import { ArrowUp, ArrowLeft, CheckCircle2, Send, Reply, Bell, BellOff, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -34,16 +34,18 @@ interface ThreadData {
   class_id: string;
 }
 
-function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvote, onReplyTo }: {
+function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvote, onReplyTo, onDelete }: {
   reply: ReplyRow; depth?: number;
   childReplies: Record<string, ReplyRow[]>;
   userId?: string;
   upvotedIds: Set<string>;
   onUpvote: (replyId: string) => void;
   onReplyTo: (replyId: string) => void;
+  onDelete: (replyId: string) => void;
 }) {
   const children = childReplies[reply.id] || [];
   const hasUpvoted = upvotedIds.has(reply.id);
+  const isOwner = !!userId && reply.user_id === userId;
 
   return (
     <div className={`${depth > 0 ? "ml-6 border-l-2 border-border pl-4" : ""}`}>
@@ -68,8 +70,13 @@ function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvot
                 </span>
               )}
               <button onClick={() => onReplyTo(reply.id)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                <Reply className="h-3 w-3" /> Reply
+                <Reply className="h-3 w-3" /> <T>Reply</T>
               </button>
+              {isOwner && (
+                <button onClick={() => onDelete(reply.id)} className="flex items-center gap-1 hover:text-destructive transition-colors">
+                  <Trash2 className="h-3 w-3" /> <T>Delete</T>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -77,7 +84,7 @@ function ReplyItem({ reply, depth = 0, childReplies, userId, upvotedIds, onUpvot
       {children.length > 0 && (
         <div className="mt-2 space-y-2">
           {children.map((r) => (
-            <ReplyItem key={r.id} reply={r} depth={depth + 1} childReplies={childReplies} userId={userId} upvotedIds={upvotedIds} onUpvote={onUpvote} onReplyTo={onReplyTo} />
+            <ReplyItem key={r.id} reply={r} depth={depth + 1} childReplies={childReplies} userId={userId} upvotedIds={upvotedIds} onUpvote={onUpvote} onReplyTo={onReplyTo} onDelete={onDelete} />
           ))}
         </div>
       )}
@@ -218,6 +225,12 @@ export default function ForumThread() {
     setSending(false);
   };
 
+  const handleDeleteReply = async (replyId: string) => {
+    if (!user) return;
+    await supabase.from("forum_replies").delete().eq("id", replyId).eq("user_id", user.id);
+    fetchReplies();
+  };
+
   const handleToggleSubscription = async () => {
     if (!id || !user) return;
     setSubLoading(true);
@@ -321,7 +334,7 @@ export default function ForumThread() {
         <div className="mt-8 space-y-4">
           <h2 className="text-sm font-semibold text-foreground">{replies.length} Replies</h2>
           {topLevelReplies.map((r) => (
-            <ReplyItem key={r.id} reply={r} childReplies={childReplies} userId={user?.id} upvotedIds={replyUpvotedIds} onUpvote={handleUpvoteReply} onReplyTo={setReplyingTo} />
+            <ReplyItem key={r.id} reply={r} childReplies={childReplies} userId={user?.id} upvotedIds={replyUpvotedIds} onUpvote={handleUpvoteReply} onReplyTo={setReplyingTo} onDelete={handleDeleteReply} />
           ))}
           {replies.length === 0 && <p className="text-muted-foreground text-sm text-center py-6">No replies yet. Be the first to respond!</p>}
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CategoryBadge } from "./CategoryBadge";
-import { Star, SmilePlus, ArrowBigUp } from "lucide-react";
+import { Star, SmilePlus, ArrowBigUp, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -142,6 +142,12 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
   };
 
   const isInstructor = role === "instructor";
+  const isOwner = !!user && message.user_id === user.id;
+
+  const handleDelete = async () => {
+    if (!user) return;
+    await supabase.from("chat_messages").delete().eq("id", message.id);
+  };
 
   return (
     <div className="animate-fade-in flex flex-col gap-1 items-start group">
@@ -217,6 +223,12 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
           {isInstructor && (
             <Button variant="ghost" size="icon" className="h-5 w-5" onClick={toggleStar} title="Star this response">
               <Star className={cn("h-3 w-3", starred ? "fill-yellow-400 text-yellow-400" : "")} />
+            </Button>
+          )}
+
+          {isOwner && (
+            <Button variant="ghost" size="icon" className="h-5 w-5 text-destructive hover:text-destructive" onClick={handleDelete} title="Delete message">
+              <Trash2 className="h-3 w-3" />
             </Button>
           )}
         </div>
