@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { SpeakButton } from "@/components/SpeakButton";
 
 interface ChatMsg {
   id: string;
@@ -194,6 +195,7 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
 
         {/* Action buttons - visible on hover */}
         <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          <SpeakButton text={message.text} className="h-5 w-5" />
           <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="h-5 w-5">
