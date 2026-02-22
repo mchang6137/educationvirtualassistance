@@ -7,12 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BookOpen, Bookmark, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
 
 interface ClassRow { id: string; name: string; code: string; }
 interface SavedThreadRow { id: string; thread_id: string; title?: string; category?: string; upvotes?: number; }
 
 export default function Profile() {
+  const { setSelectedClassId } = useClassContext();
   const { user, role } = useAuth();
   const [joinedClasses, setJoinedClasses] = useState<ClassRow[]>([]);
   const [createdClasses, setCreatedClasses] = useState<ClassRow[]>([]);
@@ -73,8 +75,7 @@ export default function Profile() {
           </TabsList>
 
           <TabsContent value="classes" className="space-y-6">
-            {/* Instructor: Classes Created */}
-            {role === "instructor" && (
+            {role === "instructor" ? (
               <Card>
                 <CardHeader><CardTitle>Classes Created</CardTitle></CardHeader>
                 <CardContent>
@@ -83,35 +84,34 @@ export default function Profile() {
                   ) : (
                     <div className="space-y-3">
                       {createdClasses.map((c) => (
-                        <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                        <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                           <p className="font-medium text-foreground">{c.name}</p>
                           <Badge variant="outline">{c.code}</Badge>
-                        </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader><CardTitle>Classes Joined</CardTitle></CardHeader>
+                <CardContent>
+                  {joinedClasses.length === 0 ? (
+                    <p className="text-muted-foreground text-sm text-center py-6">You haven't joined any classes yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {joinedClasses.map((c) => (
+                        <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                          <p className="font-medium text-foreground">{c.name}</p>
+                          <Badge variant="outline">{c.code}</Badge>
+                        </Link>
                       ))}
                     </div>
                   )}
                 </CardContent>
               </Card>
             )}
-
-            {/* Classes Joined */}
-            <Card>
-              <CardHeader><CardTitle>Classes Joined</CardTitle></CardHeader>
-              <CardContent>
-                {joinedClasses.length === 0 ? (
-                  <p className="text-muted-foreground text-sm text-center py-6">You haven't joined any classes yet.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {joinedClasses.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                        <p className="font-medium text-foreground">{c.name}</p>
-                        <Badge variant="outline">{c.code}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="saved">
