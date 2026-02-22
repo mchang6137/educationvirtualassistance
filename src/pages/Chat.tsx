@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { checkAntiCheat, categorizeMessage } from "@/data/mockData";
+import { checkContentModeration } from "@/lib/contentModeration";
 import { T } from "@/components/T";
 
 interface ChatMsg {
@@ -104,6 +105,13 @@ export default function Chat() {
   const handleSend = async (textOverride?: string) => {
     const text = textOverride || input;
     if (!text.trim() || !selectedClass || !user) return;
+
+    const moderationCheck = checkContentModeration(text);
+    if (moderationCheck.blocked) {
+      setWarning(moderationCheck.reason);
+      toast({ title: "Message blocked", description: moderationCheck.reason || "Inappropriate content detected.", variant: "destructive" });
+      return;
+    }
 
     const cheatCheck = checkAntiCheat(text);
     if (cheatCheck.blocked) {

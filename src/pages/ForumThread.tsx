@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { SpeakButton } from "@/components/SpeakButton";
 import { cn } from "@/lib/utils";
+import { checkContentModeration } from "@/lib/contentModeration";
 import { T } from "@/components/T";
 
 interface ReplyRow {
@@ -208,6 +209,13 @@ export default function ForumThread() {
 
   const handleReply = async () => {
     if (!replyText.trim() || !id || !user) return;
+
+    const modCheck = checkContentModeration(replyText);
+    if (modCheck.blocked) {
+      toast({ title: "Content blocked", description: modCheck.reason || "Inappropriate content.", variant: "destructive" });
+      return;
+    }
+
     setSending(true);
     const { error } = await supabase.from("forum_replies").insert({
       text: replyText,
