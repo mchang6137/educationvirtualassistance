@@ -37,13 +37,13 @@ export function HeroSection() {
 
         <div className="flex justify-center">
           {user ? (
-            <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/25">
+            <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl">
               <Link to={dashboardLink}>
                 {dashboardLabel} <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           ) : (
-            <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/25">
+            <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl">
               <Link to="/auth">
                 Get Started <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
