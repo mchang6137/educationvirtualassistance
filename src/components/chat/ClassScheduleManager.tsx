@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Schedule {
   id: string;
+  class_id: string;
   day_of_week: number;
   start_time: string;
   end_time: string;
@@ -70,9 +71,9 @@ export function ClassScheduleManager({
         </DialogHeader>
         <p className="text-sm text-muted-foreground">Set recurring weekly times when live chat is available.</p>
 
-        {schedules.length > 0 && (
+        {schedules.filter(s => s.class_id === classId).length > 0 && (
           <div className="space-y-2 mt-2">
-            {schedules.map((s) => (
+            {schedules.filter(s => s.class_id === classId).map((s) => (
               <div key={s.id} className="flex items-center justify-between bg-muted/50 rounded-xl px-3 py-2">
                 <span className="text-sm font-medium">{DAYS[s.day_of_week]}</span>
                 <span className="text-sm text-muted-foreground">{s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}</span>
