@@ -18,6 +18,22 @@ interface Schedule {
 }
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const HOURS = Array.from({ length: 12 }, (_, i) => i + 1); // 1-12
+const MINUTES = Array.from({ length: 60 }, (_, i) => i); // 0-59
+
+function to24(hour: string, minute: string, period: string): string {
+  let h = parseInt(hour);
+  if (period === "AM" && h === 12) h = 0;
+  if (period === "PM" && h !== 12) h += 12;
+  return `${String(h).padStart(2, "0")}:${minute.padStart(2, "0")}`;
+}
+
+function from24(time: string): { hour: string; minute: string; period: string } {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return { hour: String(hour), minute: String(m).padStart(2, "0"), period };
+}
 
 export function ClassScheduleManager({
   classId,
@@ -30,13 +46,23 @@ export function ClassScheduleManager({
 }) {
   const [open, setOpen] = useState(false);
   const [day, setDay] = useState("1");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("10:15");
+
+  const startParsed = from24("09:00");
+  const endParsed = from24("10:15");
+  const [startHour, setStartHour] = useState(startParsed.hour);
+  const [startMin, setStartMin] = useState(startParsed.minute);
+  const [startPeriod, setStartPeriod] = useState(startParsed.period);
+  const [endHour, setEndHour] = useState(endParsed.hour);
+  const [endMin, setEndMin] = useState(endParsed.minute);
+  const [endPeriod, setEndPeriod] = useState(endParsed.period);
+
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleAdd = async () => {
     setLoading(true);
+    const startTime = to24(startHour, startMin, startPeriod);
+    const endTime = to24(endHour, endMin, endPeriod);
     const { error } = await supabase.from("class_schedules").insert({
       class_id: classId,
       day_of_week: parseInt(day),
@@ -58,6 +84,11 @@ export function ClassScheduleManager({
     onUpdate();
   };
 
+  const formatDisplay = (time: string) => {
+    const { hour, minute, period } = from24(time);
+    return `${hour}:${minute} ${period}`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -76,7 +107,7 @@ export function ClassScheduleManager({
             {schedules.filter(s => s.class_id === classId).map((s) => (
               <div key={s.id} className="flex items-center justify-between bg-muted/50 rounded-xl px-3 py-2">
                 <span className="text-sm font-medium">{DAYS[s.day_of_week]}</span>
-                <span className="text-sm text-muted-foreground">{s.start_time.slice(0, 5)} – {s.end_time.slice(0, 5)}</span>
+                <span className="text-sm text-muted-foreground">{formatDisplay(s.start_time)} – {formatDisplay(s.end_time)}</span>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(s.id)}>
                   <Trash2 className="h-3.5 w-3.5 text-destructive" />
                 </Button>
@@ -85,7 +116,7 @@ export function ClassScheduleManager({
           </div>
         )}
 
-        <div className="grid grid-cols-3 gap-2 mt-4">
+        <div className="mt-4 space-y-3">
           <div>
             <Label className="text-xs">Day</Label>
             <Select value={day} onValueChange={setDay}>
@@ -97,13 +128,63 @@ export function ClassScheduleManager({
               </SelectContent>
             </Select>
           </div>
+
           <div>
-            <Label className="text-xs">Start</Label>
-            <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="rounded-xl mt-1" />
+            <Label className="text-xs">Start Time</Label>
+            <div className="grid grid-cols-3 gap-1.5 mt-1">
+              <Select value={startHour} onValueChange={setStartHour}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Hr" /></SelectTrigger>
+                <SelectContent>
+                  {HOURS.map((h) => (
+                    <SelectItem key={h} value={String(h)}>{h}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={startMin} onValueChange={setStartMin}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Min" /></SelectTrigger>
+                <SelectContent>
+                  {MINUTES.map((m) => (
+                    <SelectItem key={m} value={String(m).padStart(2, "0")}>{String(m).padStart(2, "0")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={startPeriod} onValueChange={setStartPeriod}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AM">AM</SelectItem>
+                  <SelectItem value="PM">PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
           <div>
-            <Label className="text-xs">End</Label>
-            <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="rounded-xl mt-1" />
+            <Label className="text-xs">End Time</Label>
+            <div className="grid grid-cols-3 gap-1.5 mt-1">
+              <Select value={endHour} onValueChange={setEndHour}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Hr" /></SelectTrigger>
+                <SelectContent>
+                  {HOURS.map((h) => (
+                    <SelectItem key={h} value={String(h)}>{h}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={endMin} onValueChange={setEndMin}>
+                <SelectTrigger className="rounded-xl"><SelectValue placeholder="Min" /></SelectTrigger>
+                <SelectContent>
+                  {MINUTES.map((m) => (
+                    <SelectItem key={m} value={String(m).padStart(2, "0")}>{String(m).padStart(2, "0")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={endPeriod} onValueChange={setEndPeriod}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AM">AM</SelectItem>
+                  <SelectItem value="PM">PM</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
