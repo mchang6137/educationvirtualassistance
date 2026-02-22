@@ -4,12 +4,15 @@ import { CategoryBadge } from "@/components/chat/CategoryBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, Bookmark, GraduationCap } from "lucide-react";
+import { BookOpen, Bookmark, GraduationCap, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+interface ScheduleRow { class_id: string; day_of_week: number; start_time: string; end_time: string; }
 interface ClassRow { id: string; name: string; code: string; }
 interface SavedThreadRow { id: string; thread_id: string; title?: string; category?: string; upvotes?: number; }
 
@@ -19,6 +22,7 @@ export default function Profile() {
   const [joinedClasses, setJoinedClasses] = useState<ClassRow[]>([]);
   const [createdClasses, setCreatedClasses] = useState<ClassRow[]>([]);
   const [savedThreads, setSavedThreads] = useState<SavedThreadRow[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleRow[]>([]);
   const [displayName, setDisplayName] = useState<string>("");
 
   useEffect(() => {
@@ -53,7 +57,20 @@ export default function Profile() {
         }));
         setSavedThreads(mapped);
       });
+
+    // Fetch all schedules for user's classes
+    supabase.from("class_schedules").select("class_id, day_of_week, start_time, end_time")
+      .then(({ data }) => setSchedules(data || []));
   }, [user, role]);
+
+  const formatTime = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${ampm}`;
+  };
+
+  const getClassSchedules = (classId: string) =>
+    schedules.filter((s) => s.class_id === classId);
 
   return (
     <AppLayout>
@@ -83,12 +100,25 @@ export default function Profile() {
                     <p className="text-muted-foreground text-sm text-center py-6">You haven't created any classes yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {createdClasses.map((c) => (
-                        <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                          <p className="font-medium text-foreground">{c.name}</p>
-                          <Badge variant="outline">Join Code: {c.code}</Badge>
-                        </Link>
-                      ))}
+                      {createdClasses.map((c) => {
+                        const scheds = getClassSchedules(c.id);
+                        return (
+                          <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="block p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-foreground">{c.name}</p>
+                              <Badge variant="outline">Join Code: {c.code}</Badge>
+                            </div>
+                            {scheds.length > 0 && (
+                              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {scheds.map((s, i) => (
+                                  <span key={i}>{DAY_NAMES[s.day_of_week]} {formatTime(s.start_time)} – {formatTime(s.end_time)}{i < scheds.length - 1 ? ", " : ""}</span>
+                                ))}
+                              </div>
+                            )}
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
@@ -101,12 +131,25 @@ export default function Profile() {
                     <p className="text-muted-foreground text-sm text-center py-6">You haven't joined any classes yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {joinedClasses.map((c) => (
-                        <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
-                          <p className="font-medium text-foreground">{c.name}</p>
-                          <Badge variant="outline">{c.code}</Badge>
-                        </Link>
-                      ))}
+                      {joinedClasses.map((c) => {
+                        const scheds = getClassSchedules(c.id);
+                        return (
+                          <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="block p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-foreground">{c.name}</p>
+                              <Badge variant="outline">{c.code}</Badge>
+                            </div>
+                            {scheds.length > 0 && (
+                              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                                <Clock className="h-3 w-3" />
+                                {scheds.map((s, i) => (
+                                  <span key={i}>{DAY_NAMES[s.day_of_week]} {formatTime(s.start_time)} – {formatTime(s.end_time)}{i < scheds.length - 1 ? ", " : ""}</span>
+                                ))}
+                              </div>
+                            )}
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
