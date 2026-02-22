@@ -13,6 +13,7 @@ import ForumThread from "./pages/ForumThread";
 import Instructor from "./pages/Instructor";
 import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/forum" element={<ProtectedRoute><Forum /></ProtectedRoute>} />
               <Route path="/forum/:id" element={<ProtectedRoute><ForumThread /></ProtectedRoute>} />
