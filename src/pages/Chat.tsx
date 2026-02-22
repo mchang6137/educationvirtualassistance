@@ -4,7 +4,7 @@ import { CategoryBadge } from "@/components/chat/CategoryBadge";
 import { ClassSelector, ClassOnboarding } from "@/components/ClassSelector";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, AlertTriangle, X } from "lucide-react";
+import { Send, AlertTriangle, X, Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,11 @@ interface ChatMsg {
   created_at: string;
   is_ai: boolean;
   user_id: string | null;
+}
+
+interface AISuggestion {
+  label: string;
+  text: string;
 }
 
 function ChatMessageBubble({ message }: { message: ChatMsg }) {
@@ -40,6 +45,9 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<AISuggestion[]>([]);
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { selectedClass, classes, loading } = useClassContext();
@@ -67,7 +75,11 @@ export default function Chat() {
         table: "chat_messages",
         filter: `class_id=eq.${selectedClass.id}`,
       }, (payload) => {
-        setMessages((prev) => [...prev, payload.new as ChatMsg]);
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some(m => m.id === (payload.new as ChatMsg).id)) return prev;
+          return [...prev, payload.new as ChatMsg];
+        });
       })
       .subscribe();
 
@@ -78,19 +90,20 @@ export default function Chat() {
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || !selectedClass || !user) return;
+  const handleSend = async (textOverride?: string) => {
+    const text = textOverride || input;
+    if (!text.trim() || !selectedClass || !user) return;
 
-    const cheatCheck = checkAntiCheat(input);
+    const cheatCheck = checkAntiCheat(text);
     if (cheatCheck.blocked) {
       setWarning(cheatCheck.hint || null);
       toast({ title: "Message blocked", description: "This looks like an assignment answer request.", variant: "destructive" });
       return;
     }
 
-    const category = categorizeMessage(input);
+    const category = categorizeMessage(text);
     const { error } = await supabase.from("chat_messages").insert({
-      text: input,
+      text,
       category,
       class_id: selectedClass.id,
       user_id: user.id,
@@ -103,6 +116,8 @@ export default function Chat() {
 
     setInput("");
     setWarning(null);
+    setAiOpen(false);
+    setAiSuggestions([]);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -110,6 +125,41 @@ export default function Chat() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleAiRefine = async () => {
+    if (!input.trim()) {
+      toast({ title: "Type something first", description: "Enter your rough question or idea, then click the AI button to refine it.", variant: "destructive" });
+      return;
+    }
+    setAiOpen(true);
+    setAiLoading(true);
+    setAiSuggestions([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("refine-question", {
+        body: { question: input },
+      });
+
+      if (error) throw error;
+
+      if (data?.error) {
+        toast({ title: "AI Error", description: data.error, variant: "destructive" });
+        setAiLoading(false);
+        return;
+      }
+
+      setAiSuggestions(data?.suggestions || []);
+    } catch (e: any) {
+      toast({ title: "AI Error", description: e.message || "Failed to get suggestions", variant: "destructive" });
+    }
+    setAiLoading(false);
+  };
+
+  const handlePickSuggestion = (text: string) => {
+    setInput(text);
+    setAiOpen(false);
+    setAiSuggestions([]);
   };
 
   if (loading) {
@@ -126,7 +176,7 @@ export default function Chat() {
         <div className="border-b border-border px-6 py-3 bg-card/50 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Live Chat — {selectedClass?.name || "Select a class"}</h1>
-            <p className="text-xs text-muted-foreground">All messages are anonymous</p>
+            <p className="text-xs text-muted-foreground">All messages are anonymous · updates live</p>
           </div>
           <ClassSelector />
         </div>
@@ -140,6 +190,44 @@ export default function Chat() {
           ))}
           <div ref={bottomRef} />
         </div>
+
+        {/* AI Suggestions Panel */}
+        {aiOpen && (
+          <div className="border-t border-border bg-muted/30 px-4 py-3 animate-fade-in">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-foreground">AI Question Refinement</span>
+              </div>
+              <button onClick={() => { setAiOpen(false); setAiSuggestions([]); }} className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">Pick a refined version to use, or close to keep your original.</p>
+            {aiLoading ? (
+              <div className="flex items-center gap-2 justify-center py-4 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Generating options...</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {aiSuggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handlePickSuggestion(s.text)}
+                    className="w-full text-left p-3 rounded-xl bg-card border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  >
+                    <span className="text-xs font-semibold text-primary">{s.label}</span>
+                    <p className="text-sm text-foreground mt-1 group-hover:text-primary transition-colors">{s.text}</p>
+                  </button>
+                ))}
+                {aiSuggestions.length === 0 && !aiLoading && (
+                  <p className="text-sm text-muted-foreground text-center py-2">No suggestions generated. Try again.</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="border-t border-border p-4 bg-card/50">
           {warning && (
@@ -158,15 +246,24 @@ export default function Chat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your question anonymously..."
+              placeholder="Type your question or thoughts..."
               className="min-h-[44px] max-h-32 resize-none rounded-xl"
               rows={1}
             />
-            <Button size="icon" onClick={handleSend} className="shrink-0 rounded-xl">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={handleAiRefine}
+              className="shrink-0 rounded-xl"
+              title="Refine with AI — get multiple phrasing options"
+            >
+              <Sparkles className="h-4 w-4" />
+            </Button>
+            <Button size="icon" onClick={() => handleSend()} className="shrink-0 rounded-xl">
               <Send className="h-4 w-4" />
             </Button>
           </div>
-          <p className="text-[10px] text-muted-foreground mt-1">Press Enter to send · Shift+Enter for new line</p>
+          <p className="text-[10px] text-muted-foreground mt-1">Press Enter to send · Click ✨ to refine your question with AI</p>
         </div>
       </div>
     </AppLayout>
