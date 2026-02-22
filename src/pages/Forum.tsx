@@ -38,6 +38,7 @@ export default function Forum() {
   const { user, role } = useAuth();
   const { toast } = useToast();
   const isInstructor = role === "instructor";
+  const roleLoaded = role !== null;
   const visibleCategories = isInstructor ? ALL_CATEGORIES.filter(c => c !== "Study Sessions") : ALL_CATEGORIES;
 
   const fetchThreads = async () => {
@@ -91,7 +92,7 @@ export default function Forum() {
     return matchSearch && matchCategory && !hideStudySessions;
   });
 
-  if (classesLoading) {
+  if (classesLoading || !roleLoaded) {
     return <AppLayout><div className="flex items-center justify-center py-16 text-muted-foreground">Loading classes...</div></AppLayout>;
   }
 
