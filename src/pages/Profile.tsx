@@ -13,8 +13,9 @@ interface ClassRow { id: string; name: string; code: string; }
 interface SavedThreadRow { id: string; thread_id: string; title?: string; category?: string; upvotes?: number; }
 
 export default function Profile() {
-  const { user } = useAuth();
-  const [classes, setClasses] = useState<ClassRow[]>([]);
+  const { user, role } = useAuth();
+  const [joinedClasses, setJoinedClasses] = useState<ClassRow[]>([]);
+  const [createdClasses, setCreatedClasses] = useState<ClassRow[]>([]);
   const [savedThreads, setSavedThreads] = useState<SavedThreadRow[]>([]);
   const [displayName, setDisplayName] = useState<string>("");
 
@@ -25,12 +26,18 @@ export default function Profile() {
     supabase.from("profiles").select("display_name").eq("user_id", user.id).maybeSingle()
       .then(({ data }) => setDisplayName(data?.display_name || "Anonymous"));
 
-    // Fetch classes
+    // Fetch joined classes (via class_members)
     supabase.from("class_members").select("class_id, classes(id, name, code)").eq("user_id", user.id)
       .then(({ data }) => {
         const mapped = (data || []).map((d: any) => d.classes).filter(Boolean);
-        setClasses(mapped);
+        setJoinedClasses(mapped);
       });
+
+    // Fetch created classes (for instructors)
+    if (role === "instructor") {
+      supabase.from("classes").select("id, name, code").eq("instructor_id", user.id)
+        .then(({ data }) => setCreatedClasses(data || []));
+    }
 
     // Fetch saved threads
     supabase.from("saved_threads").select("id, thread_id, forum_threads(id, title, category, upvotes)").eq("user_id", user.id)
@@ -44,7 +51,7 @@ export default function Profile() {
         }));
         setSavedThreads(mapped);
       });
-  }, [user]);
+  }, [user, role]);
 
   return (
     <AppLayout>
@@ -65,15 +72,37 @@ export default function Profile() {
             <TabsTrigger value="saved" className="rounded-lg gap-2"><Bookmark className="h-4 w-4" /> Saved Threads</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="classes">
+          <TabsContent value="classes" className="space-y-6">
+            {/* Instructor: Classes Created */}
+            {role === "instructor" && (
+              <Card>
+                <CardHeader><CardTitle>Classes Created</CardTitle></CardHeader>
+                <CardContent>
+                  {createdClasses.length === 0 ? (
+                    <p className="text-muted-foreground text-sm text-center py-6">You haven't created any classes yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {createdClasses.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                          <p className="font-medium text-foreground">{c.name}</p>
+                          <Badge variant="outline">{c.code}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Classes Joined */}
             <Card>
               <CardHeader><CardTitle>Classes Joined</CardTitle></CardHeader>
               <CardContent>
-                {classes.length === 0 ? (
+                {joinedClasses.length === 0 ? (
                   <p className="text-muted-foreground text-sm text-center py-6">You haven't joined any classes yet.</p>
                 ) : (
                   <div className="space-y-3">
-                    {classes.map((c) => (
+                    {joinedClasses.map((c) => (
                       <div key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                         <p className="font-medium text-foreground">{c.name}</p>
                         <Badge variant="outline">{c.code}</Badge>
