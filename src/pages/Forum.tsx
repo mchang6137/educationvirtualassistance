@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useChatAvailability } from "@/hooks/useChatAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { checkContentModeration } from "@/lib/contentModeration";
 import type { MessageCategory } from "@/data/mockData";
 import { T } from "@/components/T";
 import { SpeakButton } from "@/components/SpeakButton";
@@ -230,6 +231,13 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
 
   const handleCreate = async () => {
     if (!title.trim() || !body.trim() || !classId || !userId) return;
+
+    const modCheck = checkContentModeration(title + " " + body);
+    if (modCheck.blocked) {
+      toast({ title: "Content blocked", description: modCheck.reason || "Inappropriate content.", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     const tags = tagsInput.split(",").map((t) => t.trim()).filter(Boolean);
 
