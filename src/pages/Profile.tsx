@@ -86,7 +86,7 @@ export default function Profile() {
                       {createdClasses.map((c) => (
                         <Link key={c.id} to={`/chat`} onClick={() => setSelectedClassId(c.id)} className="flex items-center justify-between p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
                           <p className="font-medium text-foreground">{c.name}</p>
-                          <Badge variant="outline">{c.code}</Badge>
+                          <Badge variant="outline">Join Code: {c.code}</Badge>
                         </Link>
                       ))}
                     </div>
