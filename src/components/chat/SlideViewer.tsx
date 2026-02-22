@@ -142,7 +142,11 @@ export function SlideUploadButton({ classId }: { classId: string }) {
     }
     if (slide.file_name.toLowerCase().endsWith(".pdf")) {
       return (
-        <iframe src={slide.file_url} className="w-full h-full" title={slide.file_name} />
+        <iframe
+          src={`https://docs.google.com/gview?url=${encodeURIComponent(slide.file_url)}&embedded=true`}
+          className="w-full h-full"
+          title={slide.file_name}
+        />
       );
     }
     // For DOCX and other non-previewable files, use Google Docs viewer
@@ -305,7 +309,13 @@ export function StudentSlideViewer({ classId }: { classId: string }) {
       return <img src={url} alt="Current slide" className="max-h-full max-w-full object-contain" />;
     }
     if (isPdf) {
-      return <iframe src={url} className="w-full h-full" title="Slide" />;
+      return (
+        <iframe
+          src={`https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`}
+          className="w-full h-full"
+          title="Slide"
+        />
+      );
     }
     return (
       <iframe
