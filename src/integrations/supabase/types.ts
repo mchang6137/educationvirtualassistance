@@ -145,6 +145,79 @@ export type Database = {
           },
         ]
       }
+      class_schedules: {
+        Row: {
+          class_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          start_time: string
+          timezone: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          start_time: string
+          timezone?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          start_time?: string
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedules_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_slides: {
+        Row: {
+          class_id: string
+          created_at: string
+          file_name: string
+          file_url: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          file_name: string
+          file_url: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_slides_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classes: {
         Row: {
           code: string
@@ -342,6 +415,41 @@ export type Database = {
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      slide_sessions: {
+        Row: {
+          class_id: string
+          current_slide_url: string | null
+          id: string
+          is_active: boolean
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          current_slide_url?: string | null
+          id?: string
+          is_active?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          current_slide_url?: string | null
+          id?: string
+          is_active?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "slide_sessions_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: true
+            referencedRelation: "classes"
             referencedColumns: ["id"]
           },
         ]
