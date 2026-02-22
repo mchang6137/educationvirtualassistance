@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { CategoryBadge } from "./CategoryBadge";
-import { Star, SmilePlus } from "lucide-react";
+import { Star, SmilePlus, ArrowBigUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -30,10 +30,38 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
   const [starred, setStarred] = useState(message.is_starred);
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [emojiOpen, setEmojiOpen] = useState(false);
+  const [upvoteCount, setUpvoteCount] = useState(0);
+  const [hasUpvoted, setHasUpvoted] = useState(false);
 
   useEffect(() => {
     setStarred(message.is_starred);
   }, [message.is_starred]);
+
+  // Fetch upvotes
+  const fetchUpvotes = async () => {
+    const { data } = await supabase
+      .from("chat_upvotes")
+      .select("user_id")
+      .eq("message_id", message.id);
+    if (!data) return;
+    setUpvoteCount(data.length);
+    setHasUpvoted(data.some(u => u.user_id === user?.id));
+  };
+
+  useEffect(() => {
+    fetchUpvotes();
+  }, [message.id, user?.id]);
+
+  // Realtime upvotes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`upvotes-${message.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "chat_upvotes", filter: `message_id=eq.${message.id}` }, () => {
+        fetchUpvotes();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [message.id, user?.id]);
 
   // Fetch reactions for this message
   useEffect(() => {
@@ -61,7 +89,6 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
     const channel = supabase
       .channel(`reactions-${message.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "chat_reactions", filter: `message_id=eq.${message.id}` }, () => {
-        // Refetch on any change
         supabase
           .from("chat_reactions")
           .select("emoji, user_id")
@@ -86,6 +113,19 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
     const next = !starred;
     setStarred(next);
     await supabase.from("chat_messages").update({ is_starred: next }).eq("id", message.id);
+  };
+
+  const toggleUpvote = async () => {
+    if (!user) return;
+    if (hasUpvoted) {
+      setUpvoteCount(c => c - 1);
+      setHasUpvoted(false);
+      await supabase.from("chat_upvotes").delete().eq("message_id", message.id).eq("user_id", user.id);
+    } else {
+      setUpvoteCount(c => c + 1);
+      setHasUpvoted(true);
+      await supabase.from("chat_upvotes").insert({ message_id: message.id, user_id: user.id });
+    }
   };
 
   const toggleReaction = async (emoji: string) => {
@@ -119,6 +159,23 @@ export function ChatMessageBubble({ message }: { message: ChatMsg }) {
         <span className="text-[10px] text-muted-foreground">
           {new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
+
+        {/* Upvote button - always visible for non-AI messages */}
+        {!message.is_ai && (
+          <button
+            onClick={toggleUpvote}
+            className={cn(
+              "inline-flex items-center gap-0.5 text-xs px-2 py-0.5 rounded-full border transition-all",
+              hasUpvoted
+                ? "bg-primary/15 border-primary/40 text-primary font-medium"
+                : "bg-muted/50 border-border text-muted-foreground hover:border-primary/30 hover:text-primary"
+            )}
+            title={hasUpvoted ? "Remove upvote" : "Upvote — I have this question too"}
+          >
+            <ArrowBigUp className={cn("h-3.5 w-3.5", hasUpvoted && "fill-primary")} />
+            {upvoteCount > 0 && <span className="text-[11px]">{upvoteCount}</span>}
+          </button>
+        )}
 
         {/* Reaction pills */}
         {reactions.map(r => (
