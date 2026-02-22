@@ -1,8 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Brain, Users, BarChart3, ArrowRight, Shield } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
 
 export function HeroSection() {
+  const { user, role } = useAuth();
+
+  const dashboardLink = role === "instructor" ? "/instructor" : "/profile";
+  const dashboardLabel = role === "instructor" ? "Instructor Dashboard" : "Student Dashboard";
+
   return (
     <section className="relative overflow-hidden py-20 md:py-32">
       {/* Background decoration */}
@@ -29,17 +35,20 @@ export function HeroSection() {
           get help phrasing your thoughts, and engage in meaningful academic discussions.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/25">
-            <Link to="/profile">
-              Student Dashboard <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg" className="text-base px-8 py-6 rounded-xl">
-            <Link to="/instructor">
-              Instructor Dashboard
-            </Link>
-          </Button>
+        <div className="flex justify-center">
+          {user ? (
+            <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/25">
+              <Link to={dashboardLink}>
+                {dashboardLabel} <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          ) : (
+            <Button asChild size="lg" className="text-base px-8 py-6 rounded-xl shadow-lg shadow-primary/25">
+              <Link to="/auth">
+                Get Started <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </section>
