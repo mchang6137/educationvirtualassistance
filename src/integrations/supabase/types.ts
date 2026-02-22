@@ -14,16 +14,333 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      chat_messages: {
+        Row: {
+          category: string
+          class_id: string
+          created_at: string
+          id: string
+          is_ai: boolean
+          text: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string
+          class_id: string
+          created_at?: string
+          id?: string
+          is_ai?: boolean
+          text: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          class_id?: string
+          created_at?: string
+          id?: string
+          is_ai?: boolean
+          text?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_members: {
+        Row: {
+          class_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          instructor_id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          instructor_id: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          instructor_id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      forum_replies: {
+        Row: {
+          created_at: string
+          id: string
+          is_instructor_validated: boolean
+          parent_reply_id: string | null
+          text: string
+          thread_id: string
+          upvotes: number
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_instructor_validated?: boolean
+          parent_reply_id?: string | null
+          text: string
+          thread_id: string
+          upvotes?: number
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_instructor_validated?: boolean
+          parent_reply_id?: string | null
+          text?: string
+          thread_id?: string
+          upvotes?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_replies_parent_reply_id_fkey"
+            columns: ["parent_reply_id"]
+            isOneToOne: false
+            referencedRelation: "forum_replies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "forum_replies_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      forum_threads: {
+        Row: {
+          body: string
+          category: string
+          class_id: string
+          created_at: string
+          id: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          upvotes: number
+          user_id: string | null
+        }
+        Insert: {
+          body: string
+          category?: string
+          class_id: string
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string | null
+        }
+        Update: {
+          body?: string
+          category?: string
+          class_id?: string
+          created_at?: string
+          id?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          upvotes?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_threads_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reply_upvotes: {
+        Row: {
+          id: string
+          reply_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          reply_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          reply_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_upvotes_reply_id_fkey"
+            columns: ["reply_id"]
+            isOneToOne: false
+            referencedRelation: "forum_replies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_threads: {
+        Row: {
+          id: string
+          saved_at: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          saved_at?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          saved_at?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_threads_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      thread_upvotes: {
+        Row: {
+          id: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_upvotes_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "forum_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "student" | "instructor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +467,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["student", "instructor"],
+    },
   },
 } as const
