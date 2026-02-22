@@ -6,6 +6,10 @@ const INAPPROPRIATE_WORDS = [
   "ass", "asshole", "assholes",
   "dick", "dicks",
   "hoe", "hoes",
+  "butthole", "buttholes", "butt",
+  "boob", "boobs", "booty", "booties",
+  "tits", "titties", "titty",
+  "penis", "vagina", "balls", "nutsack", "ballsack",
   "slut", "sluts", "slutty",
   "whore", "whores",
   "skank", "skanks", "skanky",
@@ -25,6 +29,7 @@ const INAPPROPRIATE_WORDS = [
   "twat", "twats",
   "wanker", "wankers",
   "dipshit", "dumbass", "jackass",
+  "sexy", "sexi", "horny", "thicc", "thiccc",
 ];
 
 const INAPPROPRIATE_PHRASES: RegExp[] = [
@@ -60,11 +65,19 @@ const INAPPROPRIATE_PHRASES: RegExp[] = [
   /fight\s+me/i,
   /catch\s+(these\s+)?hands/i,
 
-  // Sexual content
+  // Sexual / appearance comments
   /send\s+nudes/i,
   /hook\s*up/i,
   /netflix\s+and\s+chill/i,
   /booty\s+call/i,
+  /\bis\s+(so\s+)?(hot|sexy|fine|thicc|thick|gorgeous|bangable|fuckable)/i,
+  /\blook(s|ing)?\s+(so\s+)?(hot|sexy|fine|thicc|thick|gorgeous)/i,
+  /(hot|sexy|fine)\s+(af|ass|as\s+hell)/i,
+  /smash\s+or\s+pass/i,
+  /i('d|would)\s+(smash|bang|tap|hit)/i,
+  /dat\s+ass/i,
+  /nice\s+(ass|butt|tits|boobs|body)/i,
+  /my\s+(butthole|butt|ass|dick|balls|vagina|penis)/i,
 
   // Discrimination
   /go\s+back\s+to\s+your\s+country/i,
