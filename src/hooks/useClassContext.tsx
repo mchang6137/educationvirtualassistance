@@ -29,21 +29,24 @@ export function ClassProvider({ children }: { children: ReactNode }) {
   const fetchClasses = async () => {
     if (!user) { setClasses([]); setLoading(false); return; }
 
+    // Fetch both in parallel — use whichever matches the role
+    const [instructorRes, studentRes] = await Promise.all([
+      supabase.from("classes").select("*").eq("instructor_id", user.id),
+      supabase.from("class_members").select("class_id, classes(id, name, code, instructor_id)").eq("user_id", user.id),
+    ]);
+
+    const instructorClasses = instructorRes.data || [];
+    const studentClasses = (studentRes.data || [])
+      .map((d: any) => d.classes)
+      .filter(Boolean) as ClassInfo[];
+
     if (role === "instructor") {
-      const { data } = await supabase
-        .from("classes")
-        .select("*")
-        .eq("instructor_id", user.id);
-      setClasses(data || []);
+      setClasses(instructorClasses);
+    } else if (role === "student") {
+      setClasses(studentClasses);
     } else {
-      const { data } = await supabase
-        .from("class_members")
-        .select("class_id, classes(id, name, code, instructor_id)")
-        .eq("user_id", user.id);
-      const mapped = (data || [])
-        .map((d: any) => d.classes)
-        .filter(Boolean) as ClassInfo[];
-      setClasses(mapped);
+      // Role not loaded yet — use whichever has data
+      setClasses(instructorClasses.length > 0 ? instructorClasses : studentClasses);
     }
     setLoading(false);
   };
