@@ -1,22 +1,30 @@
 const INAPPROPRIATE_WORDS = [
   // Profanity / slurs
-  "fuck", "fucker", "fucking", "fucked", "fck", "fuk",
-  "shit", "shitty", "sh1t",
-  "bitch", "b1tch", "btch",
-  "ass", "asshole", "a$$hole",
-  "dick", "d1ck",
-  "hoe", "ho3",
-  "slut", "whore", "skank",
-  "cunt", "c*nt",
+  "fuck", "fucker", "fucking", "fucked", "fck", "fuk", "fukin", "effing",
+  "shit", "shitty", "shits", "shitting",
+  "bitch", "bitches", "bitching", "bitchy",
+  "ass", "asshole", "assholes",
+  "dick", "dicks",
+  "hoe", "hoes",
+  "slut", "sluts", "slutty",
+  "whore", "whores",
+  "skank", "skanks", "skanky",
+  "cunt", "cunts",
   "damn", "dammit",
-  "bastard",
-  "retard", "retarded",
-  "stfu", "gtfo", "kys", "wtf", "lmfao",
-  "nigga", "nigger", "n1gga", "n1gger",
-  "fag", "faggot",
-  "cracker",
-  "spic", "chink", "gook",
-  "tranny",
+  "bastard", "bastards",
+  "retard", "retarded", "retards",
+  "stfu", "gtfo", "kys", "wtf", "lmfao", "lmao",
+  "nigga", "niggas", "nigger", "niggers",
+  "fag", "fags", "faggot", "faggots",
+  "cracker", "crackers",
+  "spic", "spics", "chink", "chinks", "gook", "gooks",
+  "tranny", "trannies",
+  "piss", "pissed",
+  "crap", "crappy",
+  "douche", "douchebag",
+  "twat", "twats",
+  "wanker", "wankers",
+  "dipshit", "dumbass", "jackass",
 ];
 
 const INAPPROPRIATE_PHRASES: RegExp[] = [
@@ -36,17 +44,20 @@ const INAPPROPRIATE_PHRASES: RegExp[] = [
   /pop\s+pills/i,
   /go\s+drinking/i,
 
-  // Hate speech / bullying
-  /i\s+hate\s+(people|everyone|you|him|her|them)/i,
+  // Hate speech / bullying — broad "i hate" pattern
+  /i\s+hate\b/i,
   /kill\s+(yourself|your\s*self|myself|my\s*self)/i,
   /go\s+die/i,
   /you('re|\s+are)\s+(stupid|dumb|idiot|worthless|ugly|trash|garbage|pathetic|loser)/i,
   /shut\s+(the\s+f|up)/i,
+  /you\s+suck/i,
+  /hate\s+you/i,
+  /nobody\s+likes\s+you/i,
+  /you('re|\s+are)\s+a\s+(loser|idiot|moron|freak|creep)/i,
 
   // Violence / threats
   /i('ll|'m\s+gonna)\s+(kill|hurt|beat|punch|stab|shoot)/i,
   /fight\s+me/i,
-  /pull\s+up/i,
   /catch\s+(these\s+)?hands/i,
 
   // Sexual content
@@ -64,26 +75,21 @@ export function checkContentModeration(text: string): { blocked: boolean; reason
   const normalized = text.trim().toLowerCase();
   if (!normalized) return { blocked: false, reason: null };
 
-  // Check individual words
-  const words = normalized.split(/\s+/);
+  const REASON = "This message contains inappropriate content and cannot be posted. Please keep discussions respectful and academic.";
+
+  // Check individual words — split on whitespace and punctuation boundaries
+  const words = normalized.split(/[\s,.\-!?;:'"()\[\]{}]+/);
   for (const word of words) {
-    // Strip punctuation from word edges for matching
-    const clean = word.replace(/[^a-z0-9*$@!]/g, "");
-    if (INAPPROPRIATE_WORDS.includes(clean)) {
-      return {
-        blocked: true,
-        reason: "This message contains inappropriate content and cannot be posted. Please keep discussions respectful and academic.",
-      };
+    if (!word) continue;
+    if (INAPPROPRIATE_WORDS.includes(word)) {
+      return { blocked: true, reason: REASON };
     }
   }
 
   // Check phrases
   for (const pattern of INAPPROPRIATE_PHRASES) {
     if (pattern.test(normalized)) {
-      return {
-        blocked: true,
-        reason: "This message contains inappropriate content and cannot be posted. Please keep discussions respectful and academic.",
-      };
+      return { blocked: true, reason: REASON };
     }
   }
 
