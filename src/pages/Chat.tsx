@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { CategoryBadge } from "@/components/chat/CategoryBadge";
 import { ClassSelector, ClassOnboarding } from "@/components/ClassSelector";
+import { ChatMessageBubble } from "@/components/chat/ChatMessageBubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, AlertTriangle, X, Sparkles, Loader2 } from "lucide-react";
@@ -17,28 +17,13 @@ interface ChatMsg {
   category: string;
   created_at: string;
   is_ai: boolean;
+  is_starred: boolean;
   user_id: string | null;
 }
 
 interface AISuggestion {
   label: string;
   text: string;
-}
-
-function ChatMessageBubble({ message }: { message: ChatMsg }) {
-  return (
-    <div className="animate-fade-in flex flex-col gap-1 items-start">
-      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${message.is_ai ? "bg-eva-orange-light border border-primary/20" : "bg-card border border-border"}`}>
-        <p className="text-sm text-foreground leading-relaxed">{message.text}</p>
-      </div>
-      <div className="flex items-center gap-2 px-1">
-        <CategoryBadge category={message.category as any} />
-        <span className="text-[10px] text-muted-foreground">
-          {new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-        </span>
-      </div>
-    </div>
-  );
 }
 
 export default function Chat() {
@@ -51,7 +36,7 @@ export default function Chat() {
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { selectedClass, classes, loading } = useClassContext();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
 
   // Fetch messages for selected class
   useEffect(() => {
@@ -66,20 +51,22 @@ export default function Chat() {
     };
     fetchMessages();
 
-    // Realtime subscription
     const channel = supabase
       .channel(`chat-${selectedClass.id}`)
       .on("postgres_changes", {
-        event: "INSERT",
+        event: "*",
         schema: "public",
         table: "chat_messages",
         filter: `class_id=eq.${selectedClass.id}`,
       }, (payload) => {
-        setMessages((prev) => {
-          // Avoid duplicates
-          if (prev.some(m => m.id === (payload.new as ChatMsg).id)) return prev;
-          return [...prev, payload.new as ChatMsg];
-        });
+        if (payload.eventType === "INSERT") {
+          setMessages((prev) => {
+            if (prev.some(m => m.id === (payload.new as ChatMsg).id)) return prev;
+            return [...prev, payload.new as ChatMsg];
+          });
+        } else if (payload.eventType === "UPDATE") {
+          setMessages((prev) => prev.map(m => m.id === (payload.new as ChatMsg).id ? payload.new as ChatMsg : m));
+        }
       })
       .subscribe();
 
@@ -140,15 +127,12 @@ export default function Chat() {
       const { data, error } = await supabase.functions.invoke("refine-question", {
         body: { question: input },
       });
-
       if (error) throw error;
-
       if (data?.error) {
         toast({ title: "AI Error", description: data.error, variant: "destructive" });
         setAiLoading(false);
         return;
       }
-
       setAiSuggestions(data?.suggestions || []);
     } catch (e: any) {
       toast({ title: "AI Error", description: e.message || "Failed to get suggestions", variant: "destructive" });
@@ -176,7 +160,9 @@ export default function Chat() {
         <div className="border-b border-border px-6 py-3 bg-card/50 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-foreground">Live Chat — {selectedClass?.name || "Select a class"}</h1>
-            <p className="text-xs text-muted-foreground">All messages are anonymous · updates live</p>
+            <p className="text-xs text-muted-foreground">
+              {role === "instructor" ? "You can reply and ⭐ star stellar responses" : "All messages are anonymous · updates live"}
+            </p>
           </div>
           <ClassSelector />
         </div>
@@ -246,7 +232,7 @@ export default function Chat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type your question or thoughts..."
+              placeholder={role === "instructor" ? "Reply to students..." : "Type your question or thoughts..."}
               className="min-h-[44px] max-h-32 resize-none rounded-xl"
               rows={1}
             />
