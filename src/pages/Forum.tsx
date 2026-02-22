@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, ArrowUp, MessageSquare, Plus } from "lucide-react";
+import { Search, ArrowUp, MessageSquare, Plus, Sparkles, Loader2, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useClassContext } from "@/hooks/useClassContext";
 import { useAuth } from "@/hooks/useAuth";
@@ -175,7 +175,46 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
   const [category, setCategory] = useState<string>("General Question");
   const [tagsInput, setTagsInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<{ label: string; text: string }[]>([]);
+  const [aiTarget, setAiTarget] = useState<"title" | "body">("body");
   const { toast } = useToast();
+
+  const handleAiRefine = async (target: "title" | "body") => {
+    const text = target === "title" ? title : body;
+    if (!text.trim()) {
+      toast({ title: "Type something first", description: `Enter your ${target} text, then click the AI button to refine it.`, variant: "destructive" });
+      return;
+    }
+    setAiTarget(target);
+    setAiOpen(true);
+    setAiLoading(true);
+    setAiSuggestions([]);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("refine-question", {
+        body: { question: text },
+      });
+      if (error) throw error;
+      if (data?.error) {
+        toast({ title: "AI Error", description: data.error, variant: "destructive" });
+        setAiLoading(false);
+        return;
+      }
+      setAiSuggestions(data?.suggestions || []);
+    } catch (e: any) {
+      toast({ title: "AI Error", description: e.message || "Failed to get suggestions", variant: "destructive" });
+    }
+    setAiLoading(false);
+  };
+
+  const handlePickSuggestion = (text: string) => {
+    if (aiTarget === "title") setTitle(text);
+    else setBody(text);
+    setAiOpen(false);
+    setAiSuggestions([]);
+  };
 
   const handleCreate = async () => {
     if (!title.trim() || !body.trim() || !classId || !userId) return;
@@ -199,6 +238,7 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
       toast({ title: "Thread created!" });
       setOpen(false);
       setTitle(""); setBody(""); setTagsInput("");
+      setAiOpen(false); setAiSuggestions([]);
       onCreated();
     }
     setLoading(false);
@@ -209,17 +249,80 @@ function NewThreadDialog({ classId, userId, onCreated, categories }: { classId?:
       <DialogTrigger asChild>
         <Button className="rounded-xl gap-2"><Plus className="h-4 w-4" /> New Thread</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>New Discussion Thread</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Title</Label>
+            <div className="flex items-center justify-between">
+              <Label>Title</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAiRefine("title")}
+                className="h-6 gap-1 text-xs text-primary hover:text-primary"
+                title="Refine title with AI"
+              >
+                <Sparkles className="h-3 w-3" /> Refine
+              </Button>
+            </div>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What's your question?" className="rounded-xl mt-1" />
           </div>
           <div>
-            <Label>Body</Label>
+            <div className="flex items-center justify-between">
+              <Label>Body</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAiRefine("body")}
+                className="h-6 gap-1 text-xs text-primary hover:text-primary"
+                title="Refine body with AI"
+              >
+                <Sparkles className="h-3 w-3" /> Refine
+              </Button>
+            </div>
             <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Describe your question in detail..." className="rounded-xl mt-1" rows={4} />
           </div>
+
+          {/* AI Suggestions Panel */}
+          {aiOpen && (
+            <div className="bg-muted/30 border border-border rounded-xl p-3 animate-fade-in">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">AI Refinement — {aiTarget}</span>
+                </div>
+                <button onClick={() => { setAiOpen(false); setAiSuggestions([]); }} className="text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">Pick a refined version, or close to keep your original.</p>
+              {aiLoading ? (
+                <div className="flex items-center gap-2 justify-center py-4 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Generating options...</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {aiSuggestions.map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePickSuggestion(s.text)}
+                      className="w-full text-left p-3 rounded-xl bg-card border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                    >
+                      <span className="text-xs font-semibold text-primary">{s.label}</span>
+                      <p className="text-sm text-foreground mt-1 group-hover:text-primary transition-colors">{s.text}</p>
+                    </button>
+                  ))}
+                  {aiSuggestions.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-2">No suggestions generated. Try again.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div>
             <Label>Category</Label>
             <div className="flex flex-wrap gap-2 mt-1">
