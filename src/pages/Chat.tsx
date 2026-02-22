@@ -4,7 +4,6 @@ import { ClassSelector, ClassOnboarding } from "@/components/ClassSelector";
 import { ChatMessageBubble } from "@/components/chat/ChatMessageBubble";
 import { ChatUnavailable } from "@/components/chat/ChatUnavailable";
 import { SlideUploadButton, StudentSlideViewer } from "@/components/chat/SlideViewer";
-import { ClassScheduleManager } from "@/components/chat/ClassScheduleManager";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -183,7 +182,6 @@ export default function Chat() {
           <div className="flex items-center gap-2">
             {isInstructor && selectedClass && (
               <>
-                <ClassScheduleManager classId={selectedClass.id} schedules={schedules} onUpdate={refetchSchedules} />
                 <SlideUploadButton classId={selectedClass.id} />
               </>
             )}
