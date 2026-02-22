@@ -1,5 +1,7 @@
-import { Home, MessageSquare, BookOpen, BarChart3, User } from "lucide-react";
+import { Home, MessageSquare, BookOpen, BarChart3, User, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -8,18 +10,34 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const items = [
+const studentItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Live Chat", url: "/chat", icon: MessageSquare },
   { title: "Forum", url: "/forum", icon: BookOpen },
-  { title: "Instructor", url: "/instructor", icon: BarChart3 },
+  { title: "Profile", url: "/profile", icon: User },
+];
+
+const instructorItems = [
+  { title: "Home", url: "/", icon: Home },
+  { title: "Live Chat", url: "/chat", icon: MessageSquare },
+  { title: "Forum", url: "/forum", icon: BookOpen },
+  { title: "Dashboard", url: "/instructor", icon: BarChart3 },
   { title: "Profile", url: "/profile", icon: User },
 ];
 
 export function AppSidebar() {
+  const { role, signOut } = useAuth();
+  const navigate = useNavigate();
+  const items = role === "instructor" ? instructorItems : studentItems;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
+
   return (
     <Sidebar collapsible="icon">
       <div className="flex items-center gap-2 p-4 border-b border-sidebar-border">
@@ -46,6 +64,16 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleSignOut} className="text-muted-foreground hover:text-destructive">
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
